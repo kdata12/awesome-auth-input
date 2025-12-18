@@ -1,0 +1,76 @@
+/* The main container acts as the anchor for absolute positioning */
+.auth-input-container {
+  position: relative;
+  width: fit-content;
+  cursor: text; /* Ensures the cursor looks clickable anywhere on the wrapper */
+}
+
+/* The Ghost Input: 
+  - Sits on top of everything (z-index)
+  - Invisible (opacity: 0) 
+  - Covers the full area 
+*/
+.auth-hidden-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  z-index: 10; /* Must be higher than the slots */
+  cursor: text;
+}
+
+/* The visual row of boxes */
+.auth-slots-container {
+  display: flex;
+  gap: 12px; /* Space between boxes */
+}
+
+/* Individual box style */
+.auth-slot {
+  width: 48px;
+  height: 56px;
+  border: 2px solid #e5e7eb; /* Light gray border */
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
+  font-family: monospace;
+  background-color: white;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+/* Active/Focused state for the specific slot */
+.auth-slot.active {
+  border-color: #3b82f6; /* Blue border */
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2); /* Blue ring effect */
+}
+
+/* The blinking caret */
+.auth-caret {
+  display: inline-block;
+  width: 2px;
+  height: 24px;
+  background-color: #3b82f6; /* Match the active border color */
+  margin-left: 2px; /* Slight spacing if there is text */
+  animation: blink 1s step-end infinite;
+}
+
+/* Remove margin if the slot is empty to keep caret perfectly centered */
+.auth-caret.empty {
+  margin-left: 0;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}

@@ -50,6 +50,36 @@ interface AuthCodeFieldProps {
   validation?: ValidationPattern;
   autoSubmit?: boolean;
   onComplete?: (value: string) => void;
+  value?: string;
+  onValueChange?: (value: string) => void;
+  defaultValue?: string;
+}
+
+function useControllableState<T>({
+  defaultValue,
+  onValueChange,
+  value,
+}: {
+  defaultValue: T;
+  onValueChange?: (value: T) => void;
+  value?: T;
+}): [T, (newValue: T) => void] {
+  const [internalState, setInternalState] = useState<T>(defaultValue);
+
+  const isControlled = value !== undefined;
+  const currentValue = isControlled ? value : internalState;
+
+  const setState = useCallback(
+    (newValue: T) => {
+      if (!isControlled) {
+        setInternalState(newValue);
+      }
+      onValueChange?.(newValue);
+    },
+    [isControlled, onValueChange]
+  );
+
+  return [currentValue, setState];
 }
 
 export function AuthCodeField({
@@ -58,9 +88,20 @@ export function AuthCodeField({
   validation = { type: "numeric" },
   autoSubmit = true,
   onComplete,
+  value: userValue,
+  onValueChange: userOnValueChange,
+  defaultValue,
 }: AuthCodeFieldProps) {
   const inputElements = useRef<Map<HTMLInputElement, true>>(new Map());
-  const [value, setValue] = useState<string[]>([]);
+
+  const [value, setValue] = useControllableState<string[]>({
+    value: userValue !== undefined ? Array.from(userValue) : undefined,
+    defaultValue: defaultValue ? Array.from(defaultValue) : [],
+    onValueChange: userOnValueChange
+      ? (chars) => userOnValueChange(chars.join(""))
+      : undefined,
+  });
+
   const setRef = useCallback((ref: HTMLInputElement | null) => {
     if (ref) {
       if (!inputElements.current.has(ref)) {
@@ -68,6 +109,7 @@ export function AuthCodeField({
       }
     }
   }, []);
+
   const hiddenInputRef = useRef<HTMLInputElement | null>(null);
   const getPattern = useCallback(() => {
     switch (validation.type) {
@@ -139,11 +181,6 @@ export function AuthCodeField({
     }
   });
 
-  const focusInput = (element: HTMLInputElement | undefined) => {
-    if (element === undefined) return;
-    element.focus();
-  };
-
   const valueLength = inputElements.current.size;
 
   useEffect(() => {
@@ -181,6 +218,8 @@ export function AuthCodeField({
   return (
     <AuthCodeContext.Provider value={memoizedValue}>
       <div
+        // Delegating all input's paste event this parent handler
+        // because we want to control the paste for all inputs.
         onPaste={(event) => {
           event.preventDefault();
           const clipboardData = event.clipboardData;
@@ -229,19 +268,41 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
   const { dispatch, inputRefSetter, validation } = context;
   const value = context.value[index] || "";
   const memoizedRefs = useCallback(mergeRefs(inputRefSetter), [inputRefSetter]);
-
   return (
     <input
-      type="text"
+      //FIXME: numeric isn't a type
+      type={validation.type}
       key={index}
       ref={memoizedRefs}
       inputMode={validation.inputMode}
-      pattern=""
+      pattern={validation.pattern}
       {...props}
-      onChange={() => {}}
+      onPointerDown={(event) => {
+        // A click/touch on an input can cause the input to be out of selection so
+        // we must prevent that default action and keep the input selected
+        // in order to having a singular value
+        event.preventDefault();
+        event.currentTarget.select();
+      }}
+      onFocus={(event) => {
+        // select entire input instead of just focus
+        event.target.select();
+      }}
+      onChange={(event) => {
+        const newValue = event.target.value;
+        // check if value is valid against pattern
+        if (event.target.validity.patternMismatch) return;
+        dispatch({ type: "TYPE_CHAR", char: newValue, index });
+      }}
       onKeyDown={(event) => {
+        // onKeyDown describes the intent of the user's key(s) presses
+
+        // CMD + C
+        if (event.metaKey && event.key) return;
+
         switch (event.key) {
           case "Backspace": {
+            event.preventDefault();
             dispatch({ type: "REMOVE_CHAR", index });
             break;
           }
@@ -249,6 +310,8 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
             dispatch({ type: "SUBMIT_CODE" });
             return;
           }
+
+          // left and right navigation should not move caret
           case "ArrowLeft": {
             break;
           }
@@ -257,7 +320,12 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
           }
           default:
             // TODO: use actual validation function
-            dispatch({ type: "TYPE_CHAR", char: event.key, index });
+            // dispatch({ type: "TYPE_CHAR", char: event.key, index });
+
+            if (event.key === value) {
+              dispatch({ type: "TYPE_CHAR", char: value, index });
+              return;
+            }
         }
       }}
       value={value}
@@ -280,6 +348,11 @@ function mergeRefs<T = any>(
   };
 }
 
+const focusInput = (element: HTMLInputElement | undefined) => {
+  if (element === undefined) return;
+  element.focus();
+};
+
 export {
   AuthCodeField as Group,
   AuthCodeInput as Input,
@@ -300,9 +373,9 @@ type CustomValidation = {
   inputMode: InputMode;
 };
 
-const numericRegex = RegExp(/^\d$/);
-const alphaNumericRegex = RegExp(/^([a-zA-Z]|\d)$/);
-const alphaRegex = RegExp(/^[a-zA-Z]$/);
+const numericRegex = /^\d$/;
+const alphaNumericRegex = /^[a-zA-Z\d]$/;
+const alphaRegex = /^[a-zA-Z]$/;
 
 const defaultPatternInputMap = {
   alpha: {
@@ -318,8 +391,9 @@ const defaultPatternInputMap = {
     inputMode: "text",
   },
   numeric: {
+    // FIXME: type numeric doesn't exist
     type: "numeric",
-    regexp: numericRegex,
+    regex: numericRegex,
     pattern: "[0-9]{1}",
     inputMode: "numeric",
   },

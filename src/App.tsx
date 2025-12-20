@@ -1,8 +1,9 @@
+import { useState } from "react";
 import "./App.css";
 import AuthCode from "./AuthCode";
 
-
 function App() {
+  const [value, setValue] = useState('')
   return (
     <div>
       <form
@@ -13,15 +14,16 @@ function App() {
           console.log("otp: ", formData.get("otp"));
         }}
       >
-        <AuthCode.Group 
-          name="otp" 
+        <AuthCode.Group
+          name="otp"
+          value={value}
+          onValueChange={setValue}
           validation={{
-            type: "custom"
+            type: "numeric",
           }}
           onComplete={(value) => {
-            console.log('submitting with oncomplete value: ', value)
+            console.log("submitting with oncomplete value: ", value);
           }} // auto submit: true, doesn't submit to form but will call this function instead
-
         >
           <AuthCode.Input index={0} />
           <AuthCode.Input index={1} />

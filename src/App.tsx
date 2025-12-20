@@ -3,7 +3,7 @@ import "./App.css";
 import AuthCode from "./AuthCode";
 
 function App() {
-  const [value, setValue] = useState('')
+  const [value, setValue] = useState("");
   return (
     <div>
       <form

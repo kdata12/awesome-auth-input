@@ -31,6 +31,7 @@ interface AuthCodeContextValue {
   validation:
     | (typeof defaultPatternInputMap)[DefaultInputTypes]
     | ({ type: "custom" } & CustomValidation);
+  type: "text" | "password";
 }
 
 type DefaultInputTypes = "alpha" | "alphanumeric" | "numeric";
@@ -54,6 +55,7 @@ interface AuthCodeFieldProps {
   value?: string;
   onValueChange?: (value: string) => void;
   defaultValue?: string;
+  type?: "text" | "password";
 }
 
 function useControllableState<T>({
@@ -92,6 +94,7 @@ export function AuthCodeField({
   value: userValue,
   onValueChange: userOnValueChange,
   defaultValue,
+  type = "text",
 }: AuthCodeFieldProps) {
   const inputElements = useRef<Map<HTMLInputElement, true>>(new Map());
 
@@ -136,8 +139,15 @@ export function AuthCodeField({
         newValue[index] = char;
 
         setValue(newValue);
+
+        if (index === inputs.length - 1) {
+          requestAnimationFrame(() => {
+            focusInput(inputs.at(index));
+          });
+        }
+
         requestAnimationFrame(() => {
-          inputs.at(index + 1)?.focus();
+          focusInput(inputs.at(index + 1));
         });
         return;
       }
@@ -149,7 +159,7 @@ export function AuthCodeField({
         setValue(newValue);
 
         if (index != 0) {
-          inputs.at(index - 1)?.focus();
+          focusInput(inputs.at(index - 1));
         }
         return;
       }
@@ -220,6 +230,7 @@ export function AuthCodeField({
         validation.type == "custom"
           ? validation
           : defaultPatternInputMap[validation.type],
+      type,
     }),
     [value]
   );
@@ -277,10 +288,15 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
   const { dispatch, inputRefSetter, validation } = context;
   const value = context.value[index] || "";
   const memoizedRefs = useCallback(mergeRefs(inputRefSetter), [inputRefSetter]);
+  /**
+   * TODO:
+   * - capture tab event
+   *
+   */
   return (
     <input
       //FIXME: numeric isn't a type
-      type={validation.type}
+      type={context.type}
       key={index}
       ref={memoizedRefs}
       inputMode={validation.inputMode}
@@ -305,7 +321,6 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
       }}
       onKeyDown={(event) => {
         // onKeyDown describes the intent of the user's key(s) presses
-
         if (event.metaKey && event.key == "c") return;
 
         if (
@@ -342,8 +357,6 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
           }
           default:
             // TODO: use actual validation function
-            // dispatch({ type: "TYPE_CHAR", char: event.key, index });
-
             if (event.key === value) {
               dispatch({ type: "TYPE_CHAR", char: value, index });
               return;
@@ -386,8 +399,13 @@ function mergeRefs<T = any>(
 }
 
 const focusInput = (element: HTMLInputElement | undefined) => {
-  if (element === undefined) return;
+  if (!element) return;
+  if (element.disabled) return;
+  // ownerDocument property keeps
+  if (element.ownerDocument.activeElement === element) return;
+
   element.focus();
+  element.select();
 };
 
 export {

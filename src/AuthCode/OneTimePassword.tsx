@@ -19,7 +19,8 @@ type FieldUpdateAction =
     }
   | { type: "PASTE"; value: string }
   | { type: "REMOVE_CHAR"; index: number }
-  | { type: "SUBMIT_CODE" };
+  | { type: "SUBMIT_CODE" }
+  | { type: "CLEAR_CHAR"; index: number };
 
 interface AuthCodeContextValue {
   dispatch: React.Dispatch<FieldUpdateAction>;
@@ -150,6 +151,14 @@ export function AuthCodeField({
         if (index != 0) {
           inputs.at(index - 1)?.focus();
         }
+        return;
+      }
+
+      case "CLEAR_CHAR": {
+        const { index } = action;
+        const newValue = value.slice();
+        newValue[index] = "";
+        setValue(newValue);
         return;
       }
 
@@ -297,14 +306,27 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
       onKeyDown={(event) => {
         // onKeyDown describes the intent of the user's key(s) presses
 
-        // CMD + C
-        if (event.metaKey && event.key) return;
+        if (event.metaKey && event.key == "c") return;
+
+        if (
+          isUndoShortcut(event) ||
+          isCopyShortcut(event) ||
+          isRedoShortcut(event)
+        ) {
+          event.preventDefault();
+        }
 
         switch (event.key) {
           case "Backspace": {
             event.preventDefault();
             dispatch({ type: "REMOVE_CHAR", index });
-            break;
+            return;
+          }
+
+          case "Delete": {
+            event.preventDefault();
+            dispatch({ type: "CLEAR_CHAR", index });
+            return;
           }
           case "Enter": {
             dispatch({ type: "SUBMIT_CODE" });
@@ -313,10 +335,10 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
 
           // left and right navigation should not move caret
           case "ArrowLeft": {
-            break;
+            return;
           }
           case "ArrowRight": {
-            break;
+            return;
           }
           default:
             // TODO: use actual validation function
@@ -331,6 +353,21 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
       value={value}
     />
   );
+}
+
+function isUndoShortcut(event: React.KeyboardEvent<HTMLInputElement>): boolean {
+  return (event.metaKey || event.ctrlKey) && event.key === "z";
+}
+
+function isRedoShortcut(event: React.KeyboardEvent<HTMLInputElement>): boolean {
+  return (
+    (event.metaKey || event.ctrlKey) &&
+    (event.key === "y" || (event.shiftKey && event.key === "z"))
+  );
+}
+
+function isCopyShortcut(event: React.KeyboardEvent<HTMLInputElement>): boolean {
+  return (event.metaKey || event.ctrlKey) && event.key === "c";
 }
 
 type MergedRef<T> = Ref<T> | undefined | null;

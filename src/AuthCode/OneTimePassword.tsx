@@ -187,7 +187,6 @@ export function AuthCodeField({
       }
 
       case "SUBMIT_CODE": {
-        // should the code be submitted when it is incomplete?
         const currentValue = value.join("");
         onComplete?.(currentValue);
         hiddenInputRef.current?.form?.requestSubmit();
@@ -326,14 +325,8 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
   } = context;
   const value = context.value[index] || "";
   const memoizedRefs = useCallback(mergeRefs(inputRefSetter), [inputRefSetter]);
-  /**
-   * TODO:
-   * - capture tab event
-   *
-   */
   return (
     <input
-      //FIXME: numeric isn't a type
       type={context.type}
       key={index}
       tabIndex={index === focusedIndex ? 0 : -1}
@@ -491,7 +484,6 @@ const defaultPatternInputMap = {
     inputMode: "text",
   },
   numeric: {
-    // FIXME: type numeric doesn't exist
     type: "numeric",
     regex: numericRegex,
     pattern: "[0-9]{1}",

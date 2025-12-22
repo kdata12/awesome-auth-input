@@ -10,6 +10,7 @@ import {
   useEffectEvent,
   useEffect,
 } from "react";
+import { flushSync } from "react-dom";
 
 type FieldUpdateAction =
   | {
@@ -22,7 +23,8 @@ type FieldUpdateAction =
   | { type: "SUBMIT_CODE" }
   | { type: "CLEAR_CHAR"; index: number }
   | { type: "NAVIGATE_PREVIOUS"; index: number }
-  | { type: "NAVIGATE_NEXT"; index: number };
+  | { type: "NAVIGATE_NEXT"; index: number }
+  | { type: "CLEAR_ALL" };
 
 interface AuthCodeContextValue {
   dispatch: React.Dispatch<FieldUpdateAction>;
@@ -121,23 +123,9 @@ export function AuthCodeField({
   }, []);
 
   const hiddenInputRef = useRef<HTMLInputElement | null>(null);
-  const getPattern = useCallback(() => {
-    switch (validation.type) {
-      case "alpha":
-        return alphaRegex;
-      case "alphanumeric":
-        return alphaNumericRegex;
-      case "numeric":
-        return numericRegex;
-      case "custom":
-        return validation.regex;
-      default:
-        throw new Error("No validation pattern");
-    }
-  }, [validation.type]);
 
   const dispatch = useEffectEvent((action: FieldUpdateAction) => {
-    // TODO: use an ordered dictionary instead
+    // use an ordered dictionary instead?
     const inputs = Array.from(inputElements.current.keys());
     switch (action.type) {
       case "TYPE_CHAR": {
@@ -156,7 +144,7 @@ export function AuthCodeField({
           return value[i] ?? "";
         });
 
-        setValue(newValue);
+        flushSync(() => setValue(newValue));
 
         if (finalIndex < inputs.length - 1) {
           requestAnimationFrame(() => focusInput(inputs.at(finalIndex + 1)));
@@ -170,7 +158,7 @@ export function AuthCodeField({
         const { index } = action;
         const newValue = value.slice();
         newValue[index] = "";
-        setValue(newValue);
+        flushSync(() => setValue(newValue));
 
         if (index != 0) {
           focusInput(inputs.at(index - 1));
@@ -182,7 +170,7 @@ export function AuthCodeField({
         const { index } = action;
         const newValue = value.slice();
         newValue[index] = "";
-        setValue(newValue);
+        flushSync(() => setValue(newValue));
         return;
       }
 
@@ -202,7 +190,7 @@ export function AuthCodeField({
           Math.max(0, totalInputLength - value.length)
         ).fill("");
 
-        setValue([...pastedText, ...paddedInputs]);
+        flushSync(() => setValue([...pastedText, ...paddedInputs]));
 
         if (value.length === totalInputLength) {
           focusInput(inputs.at(-1));
@@ -224,6 +212,12 @@ export function AuthCodeField({
         if (index < inputs.length - 1) {
           focusInput(inputs.at(index + 1));
         }
+        return;
+      }
+
+      case "CLEAR_ALL": {
+        flushSync(() => setValue([]));
+        focusInput(inputs.at(0));
         return;
       }
     }
@@ -254,7 +248,6 @@ export function AuthCodeField({
       inputRefSetter: setRef,
       name,
       hiddenInputRef,
-      getPattern,
       validation:
         validation.type == "custom"
           ? validation
@@ -352,7 +345,7 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
         if (event.target.validity.patternMismatch) return;
         dispatch({ type: "TYPE_CHAR", char: newValue, index });
       }}
-      onKeyDown={(event) => {
+      onKeyDown={mergeEventHandlers(props.onKeyDown, (event) => {
         // onKeyDown describes the intent of the user's key(s) presses
         if (event.metaKey && event.key == "c") return;
 
@@ -362,6 +355,12 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
           isRedoShortcut(event)
         ) {
           event.preventDefault();
+          return;
+        }
+
+        if ((event.metaKey || event.ctrlKey) && event.key === "Backspace") {
+          dispatch({ type: "CLEAR_ALL" });
+          return;
         }
 
         switch (event.key) {
@@ -392,6 +391,13 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
             dispatch({ type: "NAVIGATE_NEXT", index });
             return;
           }
+
+          case "ArrowUp":
+          case "ArrowDown": {
+            event.preventDefault();
+            return;
+          }
+
           default:
             // TODO: use actual validation function
             if (event.key === value) {
@@ -399,10 +405,23 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
               return;
             }
         }
-      }}
+      })}
       value={value}
     />
   );
+}
+
+function mergeEventHandlers<E extends { defaultPrevented: boolean }>(
+  currentHandler?: (event: E) => void,
+  nextHandler?: (event: E) => void
+) {
+  return (event: E) => {
+    currentHandler?.(event);
+
+    if (!event.defaultPrevented) {
+      nextHandler?.(event);
+    }
+  };
 }
 
 function isUndoShortcut(event: React.KeyboardEvent<HTMLInputElement>): boolean {
@@ -438,7 +457,8 @@ function mergeRefs<T = any>(
 const focusInput = (element: HTMLInputElement | undefined) => {
   if (!element) return;
   if (element.disabled) return;
-  // ownerDocument property keeps
+  // ownerDocument is the opened 'window' that owns the element
+  // e.g. popups or a browser-in-browser
   if (element.ownerDocument.activeElement === element) {
     element.select();
   } else {

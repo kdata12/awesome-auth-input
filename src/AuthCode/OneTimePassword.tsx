@@ -20,7 +20,9 @@ type FieldUpdateAction =
   | { type: "PASTE"; value: string }
   | { type: "REMOVE_CHAR"; index: number }
   | { type: "SUBMIT_CODE" }
-  | { type: "CLEAR_CHAR"; index: number };
+  | { type: "CLEAR_CHAR"; index: number }
+  | { type: "NAVIGATE_PREVIOUS"; index: number }
+  | { type: "NAVIGATE_NEXT"; index: number };
 
 interface AuthCodeContextValue {
   dispatch: React.Dispatch<FieldUpdateAction>;
@@ -32,6 +34,8 @@ interface AuthCodeContextValue {
     | (typeof defaultPatternInputMap)[DefaultInputTypes]
     | ({ type: "custom" } & CustomValidation);
   type: "text" | "password";
+  focusedIndex: number;
+  setFocusedIndex: (index: number) => void;
 }
 
 type DefaultInputTypes = "alpha" | "alphanumeric" | "numeric";
@@ -106,6 +110,8 @@ export function AuthCodeField({
       : undefined,
   });
 
+  const [focusedIndex, setFocusedIndex] = useState(0);
+
   const setRef = useCallback((ref: HTMLInputElement | null) => {
     if (ref) {
       if (!inputElements.current.has(ref)) {
@@ -129,26 +135,34 @@ export function AuthCodeField({
         throw new Error("No validation pattern");
     }
   }, [validation.type]);
+
   const dispatch = useEffectEvent((action: FieldUpdateAction) => {
     // TODO: use an ordered dictionary instead
     const inputs = Array.from(inputElements.current.keys());
     switch (action.type) {
       case "TYPE_CHAR": {
-        const { char, index } = action;
-        const newValue = value.slice();
-        newValue[index] = char;
+        const { char, index: clickedIndex } = action;
+
+        const isEditing = !!value[clickedIndex];
+        const firstEmpty = Array.from({ length: inputs.length }).findIndex(
+          (_, i) => !value[i]
+        );
+
+        const finalIndex =
+          isEditing || firstEmpty === -1 ? clickedIndex : firstEmpty;
+
+        const newValue = Array.from({ length: inputs.length }, (_, i) => {
+          if (i === finalIndex) return char;
+          return value[i] ?? "";
+        });
 
         setValue(newValue);
 
-        if (index === inputs.length - 1) {
-          requestAnimationFrame(() => {
-            focusInput(inputs.at(index));
-          });
+        if (finalIndex < inputs.length - 1) {
+          requestAnimationFrame(() => focusInput(inputs.at(finalIndex + 1)));
+        } else {
+          requestAnimationFrame(() => focusInput(inputs.at(finalIndex)));
         }
-
-        requestAnimationFrame(() => {
-          focusInput(inputs.at(index + 1));
-        });
         return;
       }
 
@@ -184,18 +198,34 @@ export function AuthCodeField({
         const { value } = action;
         const totalInputLength = inputs.length;
 
-        const pastedInputs = Array.from(value);
+        const pastedText = Array.from(value);
         const paddedInputs = Array(
           Math.max(0, totalInputLength - value.length)
         ).fill("");
 
-        setValue([...pastedInputs, ...paddedInputs]);
+        setValue([...pastedText, ...paddedInputs]);
 
         if (value.length === totalInputLength) {
           focusInput(inputs.at(-1));
         } else {
           focusInput(inputs.at(value.length));
         }
+        return;
+      }
+      case "NAVIGATE_PREVIOUS": {
+        const { index } = action;
+        if (index > 0) {
+          focusInput(inputs.at(index - 1));
+        }
+        return;
+      }
+
+      case "NAVIGATE_NEXT": {
+        const { index } = action;
+        if (index < inputs.length - 1) {
+          focusInput(inputs.at(index + 1));
+        }
+        return;
       }
     }
   });
@@ -231,8 +261,10 @@ export function AuthCodeField({
           ? validation
           : defaultPatternInputMap[validation.type],
       type,
+      focusedIndex,
+      setFocusedIndex,
     }),
-    [value]
+    [value, focusedIndex]
   );
 
   return (
@@ -285,7 +317,13 @@ interface AuthCodeInputProps
 
 export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
   const context = useAuthCodeContext();
-  const { dispatch, inputRefSetter, validation } = context;
+  const {
+    dispatch,
+    inputRefSetter,
+    validation,
+    focusedIndex,
+    setFocusedIndex,
+  } = context;
   const value = context.value[index] || "";
   const memoizedRefs = useCallback(mergeRefs(inputRefSetter), [inputRefSetter]);
   /**
@@ -298,6 +336,7 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
       //FIXME: numeric isn't a type
       type={context.type}
       key={index}
+      tabIndex={index === focusedIndex ? 0 : -1}
       ref={memoizedRefs}
       inputMode={validation.inputMode}
       pattern={validation.pattern}
@@ -312,6 +351,7 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
       onFocus={(event) => {
         // select entire input instead of just focus
         event.target.select();
+        setFocusedIndex(index);
       }}
       onChange={(event) => {
         const newValue = event.target.value;
@@ -350,9 +390,13 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
 
           // left and right navigation should not move caret
           case "ArrowLeft": {
+            event.preventDefault();
+            dispatch({ type: "NAVIGATE_PREVIOUS", index });
             return;
           }
           case "ArrowRight": {
+            event.preventDefault();
+            dispatch({ type: "NAVIGATE_NEXT", index });
             return;
           }
           default:
@@ -402,10 +446,11 @@ const focusInput = (element: HTMLInputElement | undefined) => {
   if (!element) return;
   if (element.disabled) return;
   // ownerDocument property keeps
-  if (element.ownerDocument.activeElement === element) return;
-
-  element.focus();
-  element.select();
+  if (element.ownerDocument.activeElement === element) {
+    element.select();
+  } else {
+    element.focus();
+  }
 };
 
 export {

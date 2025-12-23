@@ -12,7 +12,7 @@ import {
 } from "react";
 import { flushSync } from "react-dom";
 
-interface AuthCodeFieldProps {
+interface AuthCodeCustomField {
   /**
    * The child components, typically `<AuthCode.Input>` components.
    *
@@ -120,7 +120,31 @@ interface AuthCodeFieldProps {
    * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#type
    */
   type?: "text" | "password";
+  /**
+   * Whether or not the input elements are disabled.
+   *
+   * When set to `true`, all `<AuthCode.Input>` components will be disabled
+   * and users will not be able to interact with them.
+   *
+   * @defaultValue `false`
+   *
+   * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/disabled
+   */
+  disabled?: boolean;
 }
+
+interface AuthCodeFieldProps
+  extends AuthCodeCustomField,
+    Omit<React.ComponentProps<"div">, keyof AuthCodeCustomField> {}
+
+/**
+ * TODOs:
+ * - consider removing useEffectEvent
+ * - consider using the legacy forwardRef to forward component ref
+ *  - reason: to allow support for previous React versions. Most apps probably
+ *  haven't upgraded to React 19
+ * - possible to not render the div element?
+ */
 
 export function AuthCodeField({
   children,
@@ -132,6 +156,8 @@ export function AuthCodeField({
   onValueChange: userOnValueChange,
   defaultValue,
   type = "text",
+  disabled = false,
+  ...divProps
 }: AuthCodeFieldProps) {
   const inputElements = useRef<Map<HTMLInputElement, true>>(new Map());
 
@@ -149,11 +175,13 @@ export function AuthCodeField({
       : defaultPatternInputMap[validation.type];
 
   const [focusedIndex, setFocusedIndex] = useState(0);
+  const [inputCount, setInputCount] = useState(0);
 
   const setRef = useCallback((ref: HTMLInputElement | null) => {
     if (ref) {
       if (!inputElements.current.has(ref)) {
         inputElements.current.set(ref, true);
+        setInputCount(inputElements.current.size);
       }
     }
   }, []);
@@ -179,6 +207,7 @@ export function AuthCodeField({
 
   const hiddenInputRef = useRef<HTMLInputElement | null>(null);
 
+  // consider removing useEffectEvent
   const dispatch = useEffectEvent((action: FieldUpdateAction) => {
     // use an ordered dictionary instead?
     const inputs = Array.from(inputElements.current.keys());
@@ -269,9 +298,16 @@ export function AuthCodeField({
 
       case "NAVIGATE_NEXT": {
         const { index } = action;
-        if (index < inputs.length - 1) {
+        if (value[index] && index < inputs.length - 1) {
           focusInput(inputs.at(index + 1));
+          return;
         }
+
+        const firstEmpty = Array.from({ length: inputs.length }).findIndex(
+          (_, i) => !value[i]
+        );
+
+        focusInput(inputs.at(firstEmpty));
         return;
       }
 
@@ -283,14 +319,12 @@ export function AuthCodeField({
     }
   });
 
-  const valueLength = inputElements.current.size;
-
   useEffect(() => {
     const currentValue = value.join("");
     const isComplete =
-      currentValue.length === valueLength &&
+      currentValue.length === inputCount &&
       value.every((v) => v !== "") &&
-      valueLength > 0;
+      inputCount > 0;
 
     if (!isComplete) return;
 
@@ -299,7 +333,7 @@ export function AuthCodeField({
     if (autoSubmit) {
       hiddenInputRef.current?.form?.requestSubmit();
     }
-  }, [value, valueLength, onComplete, autoSubmit]);
+  }, [value, inputCount, onComplete, autoSubmit]);
 
   const memoizedValue = useMemo(
     () => ({
@@ -312,8 +346,11 @@ export function AuthCodeField({
       type,
       focusedIndex,
       setFocusedIndex,
+      disabled,
+      inputCount,
+      inputElements: inputElements.current,
     }),
-    [value, focusedIndex]
+    [value, focusedIndex, disabled, name, type, inputCount]
   );
 
   return (
@@ -328,7 +365,9 @@ export function AuthCodeField({
 
           dispatch({ type: "PASTE", value: pastedText });
         }}
+        {...divProps}
       >
+        <AuthCodeHiddenInput />
         {children}
       </div>
     </AuthCodeContext.Provider>
@@ -384,22 +423,27 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
     validation,
     focusedIndex,
     setFocusedIndex,
+    disabled,
+    inputCount,
   } = context;
+
   const value = context.value[index] || "";
   const memoizedRefs = useCallback(mergeRefs(inputRefSetter), [inputRefSetter]);
   return (
     <input
       type={context.type}
-      key={index}
       tabIndex={index === focusedIndex ? 0 : -1}
       ref={memoizedRefs}
       inputMode={validation.inputMode}
       pattern={validation.pattern}
-      aria-label={`One Time Password Character`}
-      // Disable password managers
+      aria-label={`One Time Password Character ${
+        index + 1
+      } out of ${inputCount}`}
+      disabled={disabled}
       autoComplete="off"
       autoCorrect="off"
       autoCapitalize="off"
+      // Disable password managers
       data-1p-ignore // 1Password
       data-lpignore="true" // LastPass
       data-form-type="other" // Generic password managers
@@ -408,9 +452,17 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
       onPointerDown={(event) => {
         // A click/touch on an input can cause the input to be out of selection so
         // we must prevent that default action and keep the input selected
-        // in order to having a singular value
+        // in order to have a singular value
         event.preventDefault();
-        event.currentTarget.select();
+        const firstEmpty = Array.from({ length: inputCount }).findIndex(
+          (_, i) => !context.value[i]
+        );
+
+        const inputToFocus = Math.min(index, firstEmpty);
+        const elementToFocus = Array.from(context.inputElements.keys())[
+          inputToFocus
+        ];
+        focusInput(elementToFocus);
       }}
       onFocus={(event) => {
         // select entire input instead of just focus
@@ -647,6 +699,9 @@ interface AuthCodeContextValue {
   type: "text" | "password";
   focusedIndex: number;
   setFocusedIndex: (index: number) => void;
+  disabled: boolean;
+  inputCount: number;
+  inputElements: Map<HTMLInputElement, true>;
 }
 
 type DefaultInputTypes = "alpha" | "alphanumeric" | "numeric";
@@ -693,6 +748,7 @@ type FieldUpdateAction =
 // =================================================
 // EXPORTS
 // =================================================
+
 export {
   AuthCodeField as Group,
   AuthCodeInput as Input,

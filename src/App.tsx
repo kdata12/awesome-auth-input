@@ -7,6 +7,7 @@ function App() {
   return (
     <div>
       <AuthCode.Group
+        className="Root"
         name="otp"
         value={value}
         onValueChange={setValue}
@@ -17,18 +18,12 @@ function App() {
           console.log("submitting with oncomplete value: ", value);
         }} // auto submit: true, doesn't submit to form but will call this function instead
       >
-        <AuthCode.Input
-          index={0}
-          onKeyDown={(event) => {
-            console.log("asd");
-          }}
-        />
+        <AuthCode.Input index={0} />
         <AuthCode.Input index={1} />
         <AuthCode.Input index={2} />
         <AuthCode.Input index={3} />
-        <AuthCode.HiddenInput />
+        <AuthCode.Input index={4} />
       </AuthCode.Group>
-      <AuthCode.Input index={4} />
     </div>
   );
 }

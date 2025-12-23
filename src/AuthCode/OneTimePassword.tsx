@@ -12,83 +12,114 @@ import {
 } from "react";
 import { flushSync } from "react-dom";
 
-type FieldUpdateAction =
-  | {
-      type: "TYPE_CHAR";
-      char: string;
-      index: number;
-    }
-  | { type: "PASTE"; value: string }
-  | { type: "REMOVE_CHAR"; index: number }
-  | { type: "SUBMIT_CODE" }
-  | { type: "CLEAR_CHAR"; index: number }
-  | { type: "NAVIGATE_PREVIOUS"; index: number }
-  | { type: "NAVIGATE_NEXT"; index: number }
-  | { type: "CLEAR_ALL" };
-
-interface AuthCodeContextValue {
-  dispatch: React.Dispatch<FieldUpdateAction>;
-  value: string[];
-  inputRefSetter: (ref: HTMLInputElement | null) => void;
-  name?: string;
-  hiddenInputRef: Ref<HTMLInputElement | null>;
-  validation:
-    | (typeof defaultPatternInputMap)[DefaultInputTypes]
-    | ({ type: "custom" } & CustomValidation);
-  type: "text" | "password";
-  focusedIndex: number;
-  setFocusedIndex: (index: number) => void;
-}
-
-type DefaultInputTypes = "alpha" | "alphanumeric" | "numeric";
-
-const AuthCodeContext = createContext<AuthCodeContextValue | null>(null);
-
-function useAuthCodeContext() {
-  const value = useContext(AuthCodeContext);
-  if (!value) {
-    throw Error("AuthCodeField context value is undefined");
-  }
-  return value;
-}
-
 interface AuthCodeFieldProps {
+  /**
+   * The child components, typically `<AuthCode.Input>` components.
+   *
+   * All `<AuthCode.Input>` components must be direct or nested children of `<AuthCode.Group>`.
+   */
   children: ReactNode;
+  /**
+   * A string specifying a name for the input control. This name is submitted
+   * along with the control's value when the form data is submitted.
+   *
+   * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#name
+   */
   name?: string;
+  /**
+   * Specifies what type of validation the user agent has to provide for each
+   * character input. Allows "numeric", "alpha", "alphanumeric", or a custom
+   * validation pattern with regex.
+   *
+   * @defaultValue `{ type: "numeric" }`
+   *
+   * @example
+   * ```tsx
+   * // Numeric only (default)
+   * <AuthCode.Group validation={{ type: "numeric" }} />
+   *
+   * // Alphabetic only
+   * <AuthCode.Group validation={{ type: "alpha" }} />
+   *
+   * // Custom validation
+   * <AuthCode.Group
+   *   validation={{
+   *     type: "custom",
+   *     regex: /^[A-Z]$/,
+   *     pattern: "[A-Z]{1}",
+   *     inputMode: "text"
+   *   }}
+   * />
+   * ```
+   */
   validation?: ValidationPattern;
+  /**
+   * Whether or not the component should attempt to automatically submit when
+   * all fields are filled. If the field is associated with an HTML `form`
+   * element, the form's `requestSubmit` method will be called.
+   *
+   * @defaultValue `true`
+   *
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/HTMLFormElement/requestSubmit
+   */
   autoSubmit?: boolean;
+  /**
+   * When the `autoSubmit` prop is set to `true`, this callback will be fired
+   * before attempting to submit the associated form. It will be called whether
+   * or not a form is located, or if submission is not allowed.
+   *
+   * The callback receives the complete auth code value as a string.
+   *
+   * @example
+   * ```tsx
+   * <AuthCode.Group
+   *   onComplete={(value) => {
+   *     console.log('Code entered:', value);
+   *     verifyCode(value);
+   *   }}
+   * />
+   * ```
+   */
   onComplete?: (value: string) => void;
+  /**
+   * The controlled value of the field. When provided, the component operates
+   * in controlled mode. This string's value, if present, must match the total
+   * number of `<AuthCode.Input>` components.
+   *
+   * @example
+   * ```tsx
+   * const [code, setCode] = useState('');
+   * <AuthCode.Group value={code} onValueChange={setCode} />
+   * ```
+   */
   value?: string;
+  /**
+   * A callback fired whenever the field value changes. This callback is called
+   * with the complete auth code value as a string.
+   *
+   * Use this prop together with `value` to create a controlled component.
+   */
   onValueChange?: (value: string) => void;
+  /**
+   * The initial value of the uncontrolled field. When provided without `value`,
+   * the component operates in uncontrolled mode.
+   *
+   * @example
+   * ```tsx
+   * <AuthCode.Group defaultValue="123" />
+   * ```
+   */
   defaultValue?: string;
+  /**
+   * The type of control to render. Allows "text" or "password".
+   *
+   * When set to "password", the input characters will be masked.
+   *
+   * @defaultValue `"text"`
+   *
+   * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#type
+   */
   type?: "text" | "password";
-}
-
-function useControllableState<T>({
-  defaultValue,
-  onValueChange,
-  value,
-}: {
-  defaultValue: T;
-  onValueChange?: (value: T) => void;
-  value?: T;
-}): [T, (newValue: T) => void] {
-  const [internalState, setInternalState] = useState<T>(defaultValue);
-
-  const isControlled = value !== undefined;
-  const currentValue = isControlled ? value : internalState;
-
-  const setState = useCallback(
-    (newValue: T) => {
-      if (!isControlled) {
-        setInternalState(newValue);
-      }
-      onValueChange?.(newValue);
-    },
-    [isControlled, onValueChange]
-  );
-
-  return [currentValue, setState];
 }
 
 export function AuthCodeField({
@@ -112,6 +143,11 @@ export function AuthCodeField({
       : undefined,
   });
 
+  const parsedValidation =
+    validation.type == "custom"
+      ? validation
+      : defaultPatternInputMap[validation.type];
+
   const [focusedIndex, setFocusedIndex] = useState(0);
 
   const setRef = useCallback((ref: HTMLInputElement | null) => {
@@ -122,6 +158,25 @@ export function AuthCodeField({
     }
   }, []);
 
+  const validateChar = useCallback(
+    (char: string): boolean => {
+      if (!char) return true;
+
+      const regex = parsedValidation.regex;
+      return regex.test(char);
+    },
+    [parsedValidation]
+  );
+
+  const validateString = useCallback(
+    (str: string): string => {
+      return Array.from(str)
+        .filter((char) => validateChar(char))
+        .join("");
+    },
+    [validateChar]
+  );
+
   const hiddenInputRef = useRef<HTMLInputElement | null>(null);
 
   const dispatch = useEffectEvent((action: FieldUpdateAction) => {
@@ -130,6 +185,8 @@ export function AuthCodeField({
     switch (action.type) {
       case "TYPE_CHAR": {
         const { char, index: clickedIndex } = action;
+
+        if (!validateChar(char)) return;
 
         const isEditing = !!value[clickedIndex];
         const firstEmpty = Array.from({ length: inputs.length }).findIndex(
@@ -185,7 +242,10 @@ export function AuthCodeField({
         const { value } = action;
         const totalInputLength = inputs.length;
 
-        const pastedText = Array.from(value);
+        const validatedValue = validateString(value);
+        if (validatedValue.length === 0) return;
+
+        const pastedText = Array.from(value).slice(0, inputs.length);
         const paddedInputs = Array(
           Math.max(0, totalInputLength - value.length)
         ).fill("");
@@ -248,10 +308,7 @@ export function AuthCodeField({
       inputRefSetter: setRef,
       name,
       hiddenInputRef,
-      validation:
-        validation.type == "custom"
-          ? validation
-          : defaultPatternInputMap[validation.type],
+      validation: parsedValidation,
       type,
       focusedIndex,
       setFocusedIndex,
@@ -278,7 +335,12 @@ export function AuthCodeField({
   );
 }
 
-export function AuthCodeHiddenInput({ ref }: { ref?: Ref<HTMLInputElement> }) {
+export function AuthCodeHiddenInput({
+  ref,
+  ...props
+}: {
+  ref?: Ref<HTMLInputElement>;
+}) {
   const context = useAuthCodeContext();
   const { name, value, hiddenInputRef } = context;
   const memoizedRefs = useCallback(mergeRefs(ref, hiddenInputRef), [
@@ -290,23 +352,30 @@ export function AuthCodeHiddenInput({ ref }: { ref?: Ref<HTMLInputElement> }) {
       ref={memoizedRefs}
       name={name}
       value={value.join("")}
-      id="otp"
-      type="hidden"
       autoCapitalize="off"
       autoCorrect="off"
       autoSave="off"
       inputMode="numeric"
       autoComplete="one-time-code"
       required
+      {...props}
+      type="hidden"
     />
   );
 }
 
-interface AuthCodeInputProps
-  extends Omit<React.ComponentProps<"input">, "value" | "onChange" | "type"> {
-  index: number;
-}
-
+/**
+ * Input component for entering a single character of the auth code.
+ *
+ * **Must be used within `<AuthCode.Group>`**
+ *
+ * @example
+ *
+ * <AuthCode.Group>
+ *   <AuthCode.Input index={0} />
+ *   <AuthCode.Input index={1} />
+ * </AuthCode.Group>
+ *  */
 export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
   const context = useAuthCodeContext();
   const {
@@ -326,6 +395,15 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
       ref={memoizedRefs}
       inputMode={validation.inputMode}
       pattern={validation.pattern}
+      aria-label={`One Time Password Character`}
+      // Disable password managers
+      autoComplete="off"
+      autoCorrect="off"
+      autoCapitalize="off"
+      data-1p-ignore // 1Password
+      data-lpignore="true" // LastPass
+      data-form-type="other" // Generic password managers
+      data-bwignore="true" // Bitwarden
       {...props}
       onPointerDown={(event) => {
         // A click/touch on an input can cause the input to be out of selection so
@@ -338,6 +416,14 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
         // select entire input instead of just focus
         event.target.select();
         setFocusedIndex(index);
+      }}
+      onInput={(event) => {
+        const input = event.currentTarget;
+        const value = input.value;
+        if (value.length > 1) {
+          event.preventDefault();
+          dispatch({ type: "PASTE", value });
+        }
       }}
       onChange={(event) => {
         const newValue = event.target.value;
@@ -380,7 +466,6 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
             return;
           }
 
-          // left and right navigation should not move caret
           case "ArrowLeft": {
             event.preventDefault();
             dispatch({ type: "NAVIGATE_PREVIOUS", index });
@@ -392,6 +477,7 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
             return;
           }
 
+          // Prevents up and down movements from unselecting
           case "ArrowUp":
           case "ArrowDown": {
             event.preventDefault();
@@ -399,7 +485,6 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
           }
 
           default:
-            // TODO: use actual validation function
             if (event.key === value) {
               dispatch({ type: "TYPE_CHAR", char: value, index });
               return;
@@ -410,6 +495,32 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
     />
   );
 }
+
+// =================================================
+// CONTEXT
+// =================================================
+
+const AuthCodeContext = createContext<AuthCodeContextValue | null>(null);
+
+function useAuthCodeContext() {
+  const value = useContext(AuthCodeContext);
+  if (!value) {
+    throw new Error(
+      "\n[awesome-auth-input] <AuthCode.Input> must be used within <AuthCode.Group>.\n\n" +
+        "Make sure all <AuthCode.Input> components are children of <AuthCode.Group>:\n\n" +
+        "Example:\n" +
+        "  <AuthCode.Group>\n" +
+        "    <AuthCode.Input index={0} />\n" +
+        "    <AuthCode.Input index={1} />\n" +
+        "  </AuthCode.Group>\n"
+    );
+  }
+  return value;
+}
+
+// =================================================
+// HELPERS & HOOKS
+// =================================================
 
 function mergeEventHandlers<E extends { defaultPrevented: boolean }>(
   currentHandler?: (event: E) => void,
@@ -466,11 +577,36 @@ const focusInput = (element: HTMLInputElement | undefined) => {
   }
 };
 
-export {
-  AuthCodeField as Group,
-  AuthCodeInput as Input,
-  AuthCodeHiddenInput as HiddenInput,
-};
+function useControllableState<T>({
+  defaultValue,
+  onValueChange,
+  value,
+}: {
+  defaultValue: T;
+  onValueChange?: (value: T) => void;
+  value?: T;
+}): [T, (newValue: T) => void] {
+  const [internalState, setInternalState] = useState<T>(defaultValue);
+
+  const isControlled = value !== undefined;
+  const currentValue = isControlled ? value : internalState;
+
+  const setState = useCallback(
+    (newValue: T) => {
+      if (!isControlled) {
+        setInternalState(newValue);
+      }
+      onValueChange?.(newValue);
+    },
+    [isControlled, onValueChange]
+  );
+
+  return [currentValue, setState];
+}
+
+// =================================================
+// INTERNAL TYPES & CONFIG
+// =================================================
 
 type InputMode = "text" | "numeric" | "none";
 
@@ -485,6 +621,35 @@ type CustomValidation = {
   pattern: string;
   inputMode: InputMode;
 };
+
+interface AuthCodeInputProps
+  extends Omit<
+    React.ComponentProps<"input">,
+    | "value"
+    | "placeholder"
+    | "disabled"
+    | "autoComplete"
+    | "defaultValue"
+    | "type"
+  > {
+  index: number;
+}
+
+interface AuthCodeContextValue {
+  dispatch: React.Dispatch<FieldUpdateAction>;
+  value: string[];
+  inputRefSetter: (ref: HTMLInputElement | null) => void;
+  name?: string;
+  hiddenInputRef: Ref<HTMLInputElement | null>;
+  validation:
+    | (typeof defaultPatternInputMap)[DefaultInputTypes]
+    | ({ type: "custom" } & CustomValidation);
+  type: "text" | "password";
+  focusedIndex: number;
+  setFocusedIndex: (index: number) => void;
+}
+
+type DefaultInputTypes = "alpha" | "alphanumeric" | "numeric";
 
 const numericRegex = /^\d$/;
 const alphaNumericRegex = /^[a-zA-Z\d]$/;
@@ -510,3 +675,26 @@ const defaultPatternInputMap = {
     inputMode: "numeric",
   },
 } as const;
+
+type FieldUpdateAction =
+  | {
+      type: "TYPE_CHAR";
+      char: string;
+      index: number;
+    }
+  | { type: "PASTE"; value: string }
+  | { type: "REMOVE_CHAR"; index: number }
+  | { type: "SUBMIT_CODE" }
+  | { type: "CLEAR_CHAR"; index: number }
+  | { type: "NAVIGATE_PREVIOUS"; index: number }
+  | { type: "NAVIGATE_NEXT"; index: number }
+  | { type: "CLEAR_ALL" };
+
+// =================================================
+// EXPORTS
+// =================================================
+export {
+  AuthCodeField as Group,
+  AuthCodeInput as Input,
+  AuthCodeHiddenInput as HiddenInput,
+};

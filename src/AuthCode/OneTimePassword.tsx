@@ -7,8 +7,8 @@ import {
   type ReactNode,
   type Ref,
   useMemo,
-  useEffectEvent,
   useEffect,
+  forwardRef,
 } from "react";
 import { flushSync } from "react-dom";
 
@@ -137,249 +137,244 @@ interface AuthCodeFieldProps
   extends AuthCodeCustomField,
     Omit<React.ComponentProps<"div">, keyof AuthCodeCustomField> {}
 
-/**
- * TODOs:
- * - consider removing useEffectEvent
- * - consider using the legacy forwardRef to forward component ref
- *  - reason: to allow support for previous React versions. Most apps probably
- *  haven't upgraded to React 19
- * - possible to not render the div element?
- */
+const AuthCodeField = forwardRef<HTMLDivElement, AuthCodeFieldProps>(
+  function AuthCodeField(
+    {
+      children,
+      name,
+      validation = { type: "numeric" },
+      autoSubmit = true,
+      onComplete,
+      value: userValue,
+      onValueChange: userOnValueChange,
+      defaultValue,
+      type = "text",
+      disabled = false,
+      ...divProps
+    }: AuthCodeFieldProps,
+    forwardedRef
+  ) {
+    const inputElements = useRef<Map<HTMLInputElement, true>>(new Map());
 
-export function AuthCodeField({
-  children,
-  name,
-  validation = { type: "numeric" },
-  autoSubmit = true,
-  onComplete,
-  value: userValue,
-  onValueChange: userOnValueChange,
-  defaultValue,
-  type = "text",
-  disabled = false,
-  ...divProps
-}: AuthCodeFieldProps) {
-  const inputElements = useRef<Map<HTMLInputElement, true>>(new Map());
+    const [value, setValue] = useControllableState<string[]>({
+      value: userValue !== undefined ? Array.from(userValue) : undefined,
+      defaultValue: defaultValue ? Array.from(defaultValue) : [],
+      onValueChange: userOnValueChange
+        ? (chars) => userOnValueChange(chars.join(""))
+        : undefined,
+    });
 
-  const [value, setValue] = useControllableState<string[]>({
-    value: userValue !== undefined ? Array.from(userValue) : undefined,
-    defaultValue: defaultValue ? Array.from(defaultValue) : [],
-    onValueChange: userOnValueChange
-      ? (chars) => userOnValueChange(chars.join(""))
-      : undefined,
-  });
+    const parsedValidation =
+      validation.type == "custom"
+        ? validation
+        : defaultPatternInputMap[validation.type];
 
-  const parsedValidation =
-    validation.type == "custom"
-      ? validation
-      : defaultPatternInputMap[validation.type];
+    const [focusedIndex, setFocusedIndex] = useState(0);
+    const [inputCount, setInputCount] = useState(0);
 
-  const [focusedIndex, setFocusedIndex] = useState(0);
-  const [inputCount, setInputCount] = useState(0);
-
-  const setRef = useCallback((ref: HTMLInputElement | null) => {
-    if (ref) {
-      if (!inputElements.current.has(ref)) {
-        inputElements.current.set(ref, true);
-        setInputCount(inputElements.current.size);
-      }
-    }
-  }, []);
-
-  const validateChar = useCallback(
-    (char: string): boolean => {
-      if (!char) return true;
-
-      const regex = parsedValidation.regex;
-      return regex.test(char);
-    },
-    [parsedValidation]
-  );
-
-  const validateString = useCallback(
-    (str: string): string => {
-      return Array.from(str)
-        .filter((char) => validateChar(char))
-        .join("");
-    },
-    [validateChar]
-  );
-
-  const hiddenInputRef = useRef<HTMLInputElement | null>(null);
-
-  // consider removing useEffectEvent
-  const dispatch = useEffectEvent((action: FieldUpdateAction) => {
-    // use an ordered dictionary instead?
-    const inputs = Array.from(inputElements.current.keys());
-    switch (action.type) {
-      case "TYPE_CHAR": {
-        const { char, index: clickedIndex } = action;
-
-        if (!validateChar(char)) return;
-
-        const isEditing = !!value[clickedIndex];
-        const firstEmpty = Array.from({ length: inputs.length }).findIndex(
-          (_, i) => !value[i]
-        );
-
-        const finalIndex =
-          isEditing || firstEmpty === -1 ? clickedIndex : firstEmpty;
-
-        const newValue = Array.from({ length: inputs.length }, (_, i) => {
-          if (i === finalIndex) return char;
-          return value[i] ?? "";
-        });
-
-        flushSync(() => setValue(newValue));
-
-        if (finalIndex < inputs.length - 1) {
-          requestAnimationFrame(() => focusInput(inputs.at(finalIndex + 1)));
-        } else {
-          requestAnimationFrame(() => focusInput(inputs.at(finalIndex)));
+    const setRef = useCallback((ref: HTMLInputElement | null) => {
+      if (ref) {
+        if (!inputElements.current.has(ref)) {
+          inputElements.current.set(ref, true);
+          setInputCount(inputElements.current.size);
         }
-        return;
       }
+    }, []);
 
-      case "REMOVE_CHAR": {
-        const { index } = action;
-        const newValue = value.slice();
-        newValue[index] = "";
-        flushSync(() => setValue(newValue));
+    const validateChar = useCallback(
+      (char: string): boolean => {
+        if (!char) return true;
 
-        if (index != 0) {
-          focusInput(inputs.at(index - 1));
-        }
-        return;
-      }
+        const regex = parsedValidation.regex;
+        return regex.test(char);
+      },
+      [parsedValidation]
+    );
 
-      case "CLEAR_CHAR": {
-        const { index } = action;
-        const newValue = value.slice();
-        newValue[index] = "";
-        flushSync(() => setValue(newValue));
-        return;
-      }
+    const validateString = useCallback(
+      (str: string): string => {
+        return Array.from(str)
+          .filter((char) => validateChar(char))
+          .join("");
+      },
+      [validateChar]
+    );
 
-      case "SUBMIT_CODE": {
-        const currentValue = value.join("");
-        onComplete?.(currentValue);
-        hiddenInputRef.current?.form?.requestSubmit();
-        break;
-      }
+    const hiddenInputRef = useRef<HTMLInputElement | null>(null);
 
-      case "PASTE": {
-        const { value } = action;
-        const totalInputLength = inputs.length;
+    // consider removing useEffectEvent
+    const dispatch = (action: FieldUpdateAction) => {
+      // use an ordered dictionary instead?
+      const inputs = Array.from(inputElements.current.keys());
+      switch (action.type) {
+        case "TYPE_CHAR": {
+          const { char, index: clickedIndex } = action;
 
-        const validatedValue = validateString(value);
-        if (validatedValue.length === 0) return;
+          if (!validateChar(char)) return;
 
-        const pastedText = Array.from(value).slice(0, inputs.length);
-        const paddedInputs = Array(
-          Math.max(0, totalInputLength - value.length)
-        ).fill("");
+          const isEditing = !!value[clickedIndex];
+          const firstEmpty = Array.from({ length: inputs.length }).findIndex(
+            (_, i) => !value[i]
+          );
 
-        flushSync(() => setValue([...pastedText, ...paddedInputs]));
+          const finalIndex =
+            isEditing || firstEmpty === -1 ? clickedIndex : firstEmpty;
 
-        if (value.length === totalInputLength) {
-          focusInput(inputs.at(-1));
-        } else {
-          focusInput(inputs.at(value.length));
-        }
-        return;
-      }
-      case "NAVIGATE_PREVIOUS": {
-        const { index } = action;
-        if (index > 0) {
-          focusInput(inputs.at(index - 1));
-        }
-        return;
-      }
+          const newValue = Array.from({ length: inputs.length }, (_, i) => {
+            if (i === finalIndex) return char;
+            return value[i] ?? "";
+          });
 
-      case "NAVIGATE_NEXT": {
-        const { index } = action;
-        if (value[index] && index < inputs.length - 1) {
-          focusInput(inputs.at(index + 1));
+          flushSync(() => setValue(newValue));
+
+          if (finalIndex < inputs.length - 1) {
+            requestAnimationFrame(() => focusInput(inputs.at(finalIndex + 1)));
+          } else {
+            requestAnimationFrame(() => focusInput(inputs.at(finalIndex)));
+          }
           return;
         }
 
-        const firstEmpty = Array.from({ length: inputs.length }).findIndex(
-          (_, i) => !value[i]
-        );
+        case "REMOVE_CHAR": {
+          const { index } = action;
+          const newValue = value.slice();
+          newValue[index] = "";
+          flushSync(() => setValue(newValue));
 
-        focusInput(inputs.at(firstEmpty));
-        return;
+          if (index != 0) {
+            focusInput(inputs.at(index - 1));
+          }
+          return;
+        }
+
+        case "CLEAR_CHAR": {
+          const { index } = action;
+          const newValue = value.slice();
+          newValue[index] = "";
+          flushSync(() => setValue(newValue));
+          return;
+        }
+
+        case "SUBMIT_CODE": {
+          const currentValue = value.join("");
+          onComplete?.(currentValue);
+          hiddenInputRef.current?.form?.requestSubmit();
+          break;
+        }
+
+        case "PASTE": {
+          const { value } = action;
+          const totalInputLength = inputs.length;
+
+          const validatedValue = validateString(value);
+          if (validatedValue.length === 0) return;
+
+          const pastedText = Array.from(value).slice(0, inputs.length);
+          const paddedInputs = Array(
+            Math.max(0, totalInputLength - value.length)
+          ).fill("");
+
+          flushSync(() => setValue([...pastedText, ...paddedInputs]));
+
+          if (value.length === totalInputLength) {
+            focusInput(inputs.at(-1));
+          } else {
+            focusInput(inputs.at(value.length));
+          }
+          return;
+        }
+        case "NAVIGATE_PREVIOUS": {
+          const { index } = action;
+          if (index > 0) {
+            focusInput(inputs.at(index - 1));
+          }
+          return;
+        }
+
+        case "NAVIGATE_NEXT": {
+          const { index } = action;
+          if (value[index] && index < inputs.length - 1) {
+            focusInput(inputs.at(index + 1));
+            return;
+          }
+
+          const firstEmpty = Array.from({ length: inputs.length }).findIndex(
+            (_, i) => !value[i]
+          );
+
+          focusInput(inputs.at(firstEmpty));
+          return;
+        }
+
+        case "CLEAR_ALL": {
+          flushSync(() => setValue([]));
+          focusInput(inputs.at(0));
+          return;
+        }
       }
+    };
 
-      case "CLEAR_ALL": {
-        flushSync(() => setValue([]));
-        focusInput(inputs.at(0));
-        return;
+    useEffect(() => {
+      const currentValue = value.join("");
+      const isComplete =
+        currentValue.length === inputCount &&
+        value.every((v) => v !== "") &&
+        inputCount > 0;
+
+      if (!isComplete) return;
+
+      onComplete?.(currentValue);
+
+      if (autoSubmit) {
+        hiddenInputRef.current?.form?.requestSubmit();
       }
-    }
-  });
+    }, [value, inputCount, onComplete, autoSubmit]);
 
-  useEffect(() => {
-    const currentValue = value.join("");
-    const isComplete =
-      currentValue.length === inputCount &&
-      value.every((v) => v !== "") &&
-      inputCount > 0;
+    const memoizedValue = useMemo(
+      () => ({
+        dispatch,
+        value,
+        inputRefSetter: setRef,
+        name,
+        hiddenInputRef,
+        validation: parsedValidation,
+        type,
+        focusedIndex,
+        setFocusedIndex,
+        disabled,
+        inputCount,
+        inputElements: inputElements.current,
+      }),
+      [value, focusedIndex, disabled, name, type, inputCount]
+    );
 
-    if (!isComplete) return;
+    return (
+      <AuthCodeContext.Provider value={memoizedValue}>
+        <div
+          // Delegating all input's paste event this parent handler
+          // because we want to control the paste for all inputs.
+          ref={forwardedRef}
+          onPaste={(event) => {
+            event.preventDefault();
+            const clipboardData = event.clipboardData;
+            const pastedText = clipboardData.getData("text/plain");
 
-    onComplete?.(currentValue);
+            dispatch({ type: "PASTE", value: pastedText });
+          }}
+          {...divProps}
+        >
+          <AuthCodeHiddenInput />
+          {children}
+        </div>
+      </AuthCodeContext.Provider>
+    );
+  }
+);
 
-    if (autoSubmit) {
-      hiddenInputRef.current?.form?.requestSubmit();
-    }
-  }, [value, inputCount, onComplete, autoSubmit]);
-
-  const memoizedValue = useMemo(
-    () => ({
-      dispatch,
-      value,
-      inputRefSetter: setRef,
-      name,
-      hiddenInputRef,
-      validation: parsedValidation,
-      type,
-      focusedIndex,
-      setFocusedIndex,
-      disabled,
-      inputCount,
-      inputElements: inputElements.current,
-    }),
-    [value, focusedIndex, disabled, name, type, inputCount]
-  );
-
-  return (
-    <AuthCodeContext.Provider value={memoizedValue}>
-      <div
-        // Delegating all input's paste event this parent handler
-        // because we want to control the paste for all inputs.
-        onPaste={(event) => {
-          event.preventDefault();
-          const clipboardData = event.clipboardData;
-          const pastedText = clipboardData.getData("text/plain");
-
-          dispatch({ type: "PASTE", value: pastedText });
-        }}
-        {...divProps}
-      >
-        <AuthCodeHiddenInput />
-        {children}
-      </div>
-    </AuthCodeContext.Provider>
-  );
-}
-
-export function AuthCodeHiddenInput({
-  ref,
-  ...props
-}: {
-  ref?: Ref<HTMLInputElement>;
-}) {
+const AuthCodeHiddenInput = forwardRef<
+  HTMLInputElement,
+  Omit<React.ComponentProps<"input">, "ref">
+>(function AuthCodeHiddenInput(props, ref) {
   const context = useAuthCodeContext();
   const { name, value, hiddenInputRef } = context;
   const memoizedRefs = useCallback(mergeRefs(ref, hiddenInputRef), [
@@ -401,7 +396,7 @@ export function AuthCodeHiddenInput({
       type="hidden"
     />
   );
-}
+});
 
 /**
  * Input component for entering a single character of the auth code.

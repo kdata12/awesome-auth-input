@@ -239,10 +239,20 @@ const AuthCodeField = forwardRef<HTMLDivElement, AuthCodeFieldProps>(
           const { index } = action;
           const newValue = value.slice();
           newValue[index] = "";
-          flushSync(() => setValue(newValue));
+          const totalInputLength = inputs.length;
 
+          const a1 = value.slice(0, index);
+          const a2 = value.slice(index + 1);
+          const a3 = a1.concat(a2);
+          const paddedInputs = Array(
+            Math.max(0, totalInputLength - a3.length)
+          ).fill("");
+          flushSync(() => setValue(a3.concat(paddedInputs)));
           if (index != 0) {
             focusInput(inputs.at(index - 1));
+          } else {
+            // index is 0
+            focusInput(inputs.at(0));
           }
           return;
         }
@@ -276,7 +286,7 @@ const AuthCodeField = forwardRef<HTMLDivElement, AuthCodeFieldProps>(
 
           flushSync(() => setValue([...pastedText, ...paddedInputs]));
 
-          if (value.length === totalInputLength) {
+          if (pastedText.length === totalInputLength) {
             focusInput(inputs.at(-1));
           } else {
             focusInput(inputs.at(value.length));
@@ -301,6 +311,9 @@ const AuthCodeField = forwardRef<HTMLDivElement, AuthCodeFieldProps>(
           const firstEmpty = Array.from({ length: inputs.length }).findIndex(
             (_, i) => !value[i]
           );
+
+          // BUG: if a value was deleted in the middle of a sequence, then we would
+          // not be able to navigate to the right side of the sequence
 
           focusInput(inputs.at(firstEmpty));
           return;
@@ -423,6 +436,11 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
   } = context;
 
   const value = context.value[index] || "";
+  const firstEmptyIndex = Array.from({ length: inputCount }).findIndex(
+    (_, i) => !context.value[i]
+  );
+  const lastFocusableIndex =
+    firstEmptyIndex === -1 ? inputCount - 1 : firstEmptyIndex;
   const memoizedRefs = useCallback(mergeRefs(inputRefSetter), [inputRefSetter]);
   return (
     <input
@@ -449,11 +467,7 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
         // we must prevent that default action and keep the input selected
         // in order to have a singular value
         event.preventDefault();
-        const firstEmpty = Array.from({ length: inputCount }).findIndex(
-          (_, i) => !context.value[i]
-        );
-
-        const inputToFocus = Math.min(index, firstEmpty);
+        const inputToFocus = Math.min(index, lastFocusableIndex);
         const elementToFocus = Array.from(context.inputElements.keys())[
           inputToFocus
         ];
@@ -466,14 +480,23 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
       }}
       onInput={(event) => {
         const input = event.currentTarget;
-        const value = input.value;
-        if (value.length > 1) {
+        const inputValue = input.value;
+
+        // Only treat as paste if it's an actual paste operation or truly long input
+        // Single character duplicates (like "11" from typing "1" on "1") should go through onChange
+        const inputType = (event.nativeEvent as InputEvent).inputType;
+        const isPasteOperation =
+          inputType === "insertFromPaste" || inputType === "insertFromDrop";
+        const isLongInput = inputValue.length > 2;
+
+        if (isPasteOperation || isLongInput) {
           event.preventDefault();
-          dispatch({ type: "PASTE", value });
+          dispatch({ type: "PASTE", value: inputValue });
         }
       }}
       onChange={(event) => {
         const newValue = event.target.value;
+        console.log("changing at index: ", index);
         // check if value is valid against pattern
         if (event.target.validity.patternMismatch) return;
         dispatch({ type: "TYPE_CHAR", char: newValue, index });
@@ -532,10 +555,33 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
           }
 
           default:
+            // if key pressed is the same as the current value
             if (event.key === value) {
+              // this is essentially focusing the next input
               dispatch({ type: "TYPE_CHAR", char: value, index });
               return;
             }
+
+            const hasValue = !!event.currentTarget.value;
+            const isFullySelected =
+              event.currentTarget.selectionStart === 0 &&
+              event.currentTarget.selectionEnd != null &&
+              event.currentTarget.selectionEnd > 0;
+
+            // When input has value and is fully selected, validate the incoming key
+            // to prevent selection loss from invalid keystrokes
+            if (hasValue && isFullySelected) {
+              // Only validate printable single characters (ignore modifiers, arrows, etc.)
+              if (event.key.length === 1) {
+                const isValid = validation.regex.test(event.key);
+                if (!isValid) {
+                  event.preventDefault();
+                  return;
+                }
+              }
+            }
+            // potential concerns:
+            // 1. once focused on an input, can't cmd + r to refresh the page
         }
       })}
       value={value}

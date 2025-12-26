@@ -526,17 +526,13 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
         }
 
         switch (event.key) {
+          case "Delete":
           case "Backspace": {
             event.preventDefault();
             dispatch({ type: "REMOVE_CHAR", index });
             return;
           }
 
-          case "Delete": {
-            event.preventDefault();
-            dispatch({ type: "CLEAR_CHAR", index });
-            return;
-          }
           case "Enter": {
             dispatch({ type: "SUBMIT_CODE" });
             return;

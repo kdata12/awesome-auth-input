@@ -1,22 +1,23 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "./App.css";
 import AuthCode from "./AuthCode";
 
 function App() {
   const [value, setValue] = useState("");
+  const ref = useRef<HTMLDivElement | null>(null);
+
   return (
     <div>
       <AuthCode.Group
+        ref={ref}
         className="Root"
         name="otp"
-        value={value}
-        onValueChange={setValue}
         validation={{
           type: "numeric",
         }}
         onComplete={(value) => {
           console.log("submitting with oncomplete value: ", value);
-        }} // auto submit: true, doesn't submit to form but will call this function instead
+        }}
       >
         <AuthCode.Input index={0} />
         <AuthCode.Input index={1} />

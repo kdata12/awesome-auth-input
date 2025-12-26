@@ -155,7 +155,6 @@ const AuthCodeField = forwardRef<HTMLDivElement, AuthCodeFieldProps>(
     forwardedRef
   ) {
     const inputElements = useRef<Map<HTMLInputElement, true>>(new Map());
-
     const [value, setValue] = useControllableState<string[]>({
       value: userValue !== undefined ? Array.from(userValue) : undefined,
       defaultValue: defaultValue ? Array.from(defaultValue) : [],
@@ -555,10 +554,13 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
           }
 
           default:
-            // if key pressed is the same as the current value
             if (event.key === value) {
               // this is essentially focusing the next input
               dispatch({ type: "TYPE_CHAR", char: value, index });
+              return;
+            }
+
+            if (event.metaKey || event.ctrlKey) {
               return;
             }
 
@@ -580,8 +582,6 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
                 }
               }
             }
-            // potential concerns:
-            // 1. once focused on an input, can't cmd + r to refresh the page
         }
       })}
       value={value}

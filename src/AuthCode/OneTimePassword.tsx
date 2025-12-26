@@ -163,7 +163,7 @@ const AuthCodeField = forwardRef<HTMLDivElement, AuthCodeFieldProps>(
         : undefined,
     });
 
-    const parsedValidation =
+    const validationConfig =
       validation.type == "custom"
         ? validation
         : defaultPatternInputMap[validation.type];
@@ -171,7 +171,7 @@ const AuthCodeField = forwardRef<HTMLDivElement, AuthCodeFieldProps>(
     const [focusedIndex, setFocusedIndex] = useState(0);
     const [inputCount, setInputCount] = useState(0);
 
-    const setRef = useCallback((ref: HTMLInputElement | null) => {
+    const registerInputRef = useCallback((ref: HTMLInputElement | null) => {
       if (ref) {
         if (!inputElements.current.has(ref)) {
           inputElements.current.set(ref, true);
@@ -184,10 +184,10 @@ const AuthCodeField = forwardRef<HTMLDivElement, AuthCodeFieldProps>(
       (char: string): boolean => {
         if (!char) return true;
 
-        const regex = parsedValidation.regex;
+        const regex = validationConfig.regex;
         return regex.test(char);
       },
-      [parsedValidation]
+      [validationConfig]
     );
 
     const validateString = useCallback(
@@ -207,46 +207,51 @@ const AuthCodeField = forwardRef<HTMLDivElement, AuthCodeFieldProps>(
       const inputs = Array.from(inputElements.current.keys());
       switch (action.type) {
         case "TYPE_CHAR": {
-          const { char, index: clickedIndex } = action;
+          const { char, index: targetIndex } = action;
 
           if (!validateChar(char)) return;
 
-          const isEditing = !!value[clickedIndex];
-          const firstEmpty = Array.from({ length: inputs.length }).findIndex(
-            (_, i) => !value[i]
-          );
+          const hasExistingValue = !!value[targetIndex];
+          const firstEmptyIndex = Array.from({
+            length: inputs.length,
+          }).findIndex((_, i) => !value[i]);
 
-          const finalIndex =
-            isEditing || firstEmpty === -1 ? clickedIndex : firstEmpty;
+          const insertionIndex =
+            hasExistingValue || firstEmptyIndex === -1
+              ? targetIndex
+              : firstEmptyIndex;
 
           const newValue = Array.from({ length: inputs.length }, (_, i) => {
-            if (i === finalIndex) return char;
+            if (i === insertionIndex) return char;
             return value[i] ?? "";
           });
 
           flushSync(() => setValue(newValue));
 
-          if (finalIndex < inputs.length - 1) {
-            requestAnimationFrame(() => focusInput(inputs.at(finalIndex + 1)));
+          if (insertionIndex < inputs.length - 1) {
+            requestAnimationFrame(() =>
+              focusInput(inputs.at(insertionIndex + 1))
+            );
           } else {
-            requestAnimationFrame(() => focusInput(inputs.at(finalIndex)));
+            requestAnimationFrame(() => focusInput(inputs.at(insertionIndex)));
           }
           return;
         }
 
         case "REMOVE_CHAR": {
           const { index } = action;
-          const newValue = value.slice();
-          newValue[index] = "";
           const totalInputLength = inputs.length;
 
-          const a1 = value.slice(0, index);
-          const a2 = value.slice(index + 1);
-          const a3 = a1.concat(a2);
-          const paddedInputs = Array(
-            Math.max(0, totalInputLength - a3.length)
+          // Remove character and shift remaining values left
+          const leftPortion = value.slice(0, index);
+          const rightPortion = value.slice(index + 1);
+          const compacted = leftPortion.concat(rightPortion);
+          const emptySlots = Array(
+            Math.max(0, totalInputLength - compacted.length)
           ).fill("");
-          flushSync(() => setValue(a3.concat(paddedInputs)));
+
+          flushSync(() => setValue(compacted.concat(emptySlots)));
+
           if (index != 0) {
             focusInput(inputs.at(index - 1));
           } else {
@@ -278,14 +283,14 @@ const AuthCodeField = forwardRef<HTMLDivElement, AuthCodeFieldProps>(
           const validatedValue = validateString(value);
           if (validatedValue.length === 0) return;
 
-          const pastedText = Array.from(value).slice(0, inputs.length);
-          const paddedInputs = Array(
+          const pastedCharacters = Array.from(value).slice(0, inputs.length);
+          const emptySlots = Array(
             Math.max(0, totalInputLength - value.length)
           ).fill("");
 
-          flushSync(() => setValue([...pastedText, ...paddedInputs]));
+          flushSync(() => setValue([...pastedCharacters, ...emptySlots]));
 
-          if (pastedText.length === totalInputLength) {
+          if (pastedCharacters.length === totalInputLength) {
             focusInput(inputs.at(-1));
           } else {
             focusInput(inputs.at(value.length));
@@ -327,29 +332,29 @@ const AuthCodeField = forwardRef<HTMLDivElement, AuthCodeFieldProps>(
     };
 
     useEffect(() => {
-      const currentValue = value.join("");
-      const isComplete =
-        currentValue.length === inputCount &&
+      const concatenatedValue = value.join("");
+      const isCodeFullyEntered =
+        concatenatedValue.length === inputCount &&
         value.every((v) => v !== "") &&
         inputCount > 0;
 
-      if (!isComplete) return;
+      if (!isCodeFullyEntered) return;
 
-      onComplete?.(currentValue);
+      onComplete?.(concatenatedValue);
 
       if (autoSubmit) {
         hiddenInputRef.current?.form?.requestSubmit();
       }
     }, [value, inputCount, onComplete, autoSubmit]);
 
-    const memoizedValue = useMemo(
+    const contextValue = useMemo(
       () => ({
         dispatch,
         value,
-        inputRefSetter: setRef,
+        registerInputRef,
         name,
         hiddenInputRef,
-        validation: parsedValidation,
+        validation: validationConfig,
         type,
         focusedIndex,
         setFocusedIndex,
@@ -361,7 +366,7 @@ const AuthCodeField = forwardRef<HTMLDivElement, AuthCodeFieldProps>(
     );
 
     return (
-      <AuthCodeContext.Provider value={memoizedValue}>
+      <AuthCodeContext.Provider value={contextValue}>
         <div
           // Delegating all input's paste event this parent handler
           // because we want to control the paste for all inputs.
@@ -426,7 +431,7 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
   const context = useAuthCodeContext();
   const {
     dispatch,
-    inputRefSetter,
+    registerInputRef,
     validation,
     focusedIndex,
     setFocusedIndex,
@@ -434,18 +439,20 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
     inputCount,
   } = context;
 
-  const value = context.value[index] || "";
+  const currentCharacter = context.value[index] || "";
   const firstEmptyIndex = Array.from({ length: inputCount }).findIndex(
     (_, i) => !context.value[i]
   );
-  const lastFocusableIndex =
+  const nextEmptyOrLastIndex =
     firstEmptyIndex === -1 ? inputCount - 1 : firstEmptyIndex;
-  const memoizedRefs = useCallback(mergeRefs(inputRefSetter), [inputRefSetter]);
+  const mergedInputRef = useCallback(mergeRefs(registerInputRef), [
+    registerInputRef,
+  ]);
   return (
     <input
       type={context.type}
       tabIndex={index === focusedIndex ? 0 : -1}
-      ref={memoizedRefs}
+      ref={mergedInputRef}
       inputMode={validation.inputMode}
       pattern={validation.pattern}
       aria-label={`One Time Password Character ${
@@ -466,11 +473,11 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
         // we must prevent that default action and keep the input selected
         // in order to have a singular value
         event.preventDefault();
-        const inputToFocus = Math.min(index, lastFocusableIndex);
-        const elementToFocus = Array.from(context.inputElements.keys())[
-          inputToFocus
+        const focusTargetIndex = Math.min(index, nextEmptyOrLastIndex);
+        const focusTargetElement = Array.from(context.inputElements.keys())[
+          focusTargetIndex
         ];
-        focusInput(elementToFocus);
+        focusInput(focusTargetElement);
       }}
       onFocus={(event) => {
         // select entire input instead of just focus
@@ -478,19 +485,19 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
         setFocusedIndex(index);
       }}
       onInput={(event) => {
-        const input = event.currentTarget;
-        const inputValue = input.value;
+        const newInputValue = event.currentTarget.value;
 
         // Only treat as paste if it's an actual paste operation or truly long input
         // Single character duplicates (like "11" from typing "1" on "1") should go through onChange
-        const inputType = (event.nativeEvent as InputEvent).inputType;
+        const browserInputType = (event.nativeEvent as InputEvent).inputType;
         const isPasteOperation =
-          inputType === "insertFromPaste" || inputType === "insertFromDrop";
-        const isLongInput = inputValue.length > 2;
+          browserInputType === "insertFromPaste" ||
+          browserInputType === "insertFromDrop";
+        const isLongInput = newInputValue.length > 2;
 
         if (isPasteOperation || isLongInput) {
           event.preventDefault();
-          dispatch({ type: "PASTE", value: inputValue });
+          dispatch({ type: "PASTE", value: newInputValue });
         }
       }}
       onChange={(event) => {
@@ -554,9 +561,9 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
           }
 
           default:
-            if (event.key === value) {
+            if (event.key === currentCharacter) {
               // this is essentially focusing the next input
-              dispatch({ type: "TYPE_CHAR", char: value, index });
+              dispatch({ type: "TYPE_CHAR", char: currentCharacter, index });
               return;
             }
 
@@ -584,7 +591,7 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
             }
         }
       })}
-      value={value}
+      value={currentCharacter}
     />
   );
 }
@@ -731,7 +738,7 @@ interface AuthCodeInputProps
 interface AuthCodeContextValue {
   dispatch: React.Dispatch<FieldUpdateAction>;
   value: string[];
-  inputRefSetter: (ref: HTMLInputElement | null) => void;
+  registerInputRef: (ref: HTMLInputElement | null) => void;
   name?: string;
   hiddenInputRef: Ref<HTMLInputElement | null>;
   validation:

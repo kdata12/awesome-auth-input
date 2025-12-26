@@ -501,11 +501,11 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
         }
       }}
       onChange={(event) => {
-        const newValue = event.target.value;
+        const newInputValue = event.target.value;
         console.log("changing at index: ", index);
         // check if value is valid against pattern
         if (event.target.validity.patternMismatch) return;
-        dispatch({ type: "TYPE_CHAR", char: newValue, index });
+        dispatch({ type: "TYPE_CHAR", char: newInputValue, index });
       }}
       onKeyDown={mergeEventHandlers(props.onKeyDown, (event) => {
         // onKeyDown describes the intent of the user's key(s) presses
@@ -651,11 +651,9 @@ function isCopyShortcut(event: React.KeyboardEvent<HTMLInputElement>): boolean {
 }
 
 type MergedRef<T> = Ref<T> | undefined | null;
-function mergeRefs<T = any>(
-  ...refSetter: MergedRef<T>[]
-): React.RefCallback<T> {
+function mergeRefs<T = any>(...refs: MergedRef<T>[]): React.RefCallback<T> {
   return function (node) {
-    refSetter.forEach((ref) => {
+    refs.forEach((ref) => {
       if (typeof ref === "function") {
         ref(node);
       } else if (ref != null) {

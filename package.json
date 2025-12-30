@@ -1,30 +1,93 @@
 {
   "name": "awesome-auth-input",
-  "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "A headless, accessible, and fully-typed React component for OTP/auth code inputs with support for numeric, alphabetic, and custom validation patterns.",
   "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prepublishOnly": "npm run build",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "docs": "cd docs && npx mintlify dev",
+    "docs:build": "cd docs && npx mintlify build"
   },
-  "dependencies": {
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^5.1.1",
+    "@vitejs/plugin-react": "^4.3.0",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vite": "^7.2.4"
-  }
+    "vite": "^6.0.0",
+    "storybook": "8.6.15",
+    "@storybook/react": "8.6.15",
+    "@storybook/react-vite": "8.6.15",
+    "@storybook/addon-essentials": "8.6.15",
+    "@storybook/blocks": "8.6.15",
+    "@storybook/test": "8.6.15",
+    "@storybook/addon-onboarding": "8.6.15",
+    "@storybook/addon-interactions": "8.6.15"
+  },
+  "keywords": [
+    "react",
+    "otp",
+    "auth-code",
+    "one-time-password",
+    "2fa",
+    "two-factor-authentication",
+    "verification-code",
+    "pin-input",
+    "headless",
+    "accessible",
+    "typescript"
+  ],
+  "author": {
+    "name": "Phuc Vong",
+    "email": "phuctvong@gmail.com",
+    "url": "phucvong.com"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kdata12/awesome-auth-input.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kdata12/awesome-auth-input/issues"
+  },
+  "homepage": "https://github.com/kdata12/awesome-auth-input"
 }

@@ -15,16 +15,6 @@
       "to": "#3b82f6"
     }
   },
-  "topbarLinks": [
-    {
-      "name": "GitHub",
-      "url": "https://github.com/your-username/awesome-auth-input"
-    }
-  ],
-  "topbarCtaButton": {
-    "name": "Get Started",
-    "url": "/introduction"
-  },
   "anchors": [
     {
       "name": "NPM",
@@ -34,7 +24,7 @@
     {
       "name": "GitHub",
       "icon": "github",
-      "url": "https://github.com/your-username/awesome-auth-input"
+      "url": "https://github.com/kdata12/awesome-auth-input"
     }
   ],
   "navigation": [

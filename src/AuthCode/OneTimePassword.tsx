@@ -154,7 +154,7 @@ const AuthCodeField = forwardRef<HTMLDivElement, AuthCodeFieldProps>(
     }: AuthCodeFieldProps,
     forwardedRef
   ) {
-    const inputElements = useRef<Map<HTMLInputElement, true>>(new Map());
+    const inputElements = useRef<Map<HTMLInputElement, number>>(new Map());
     const [value, setValue] = useControllableState<string[]>({
       value: userValue !== undefined ? Array.from(userValue) : undefined,
       defaultValue: defaultValue ? Array.from(defaultValue) : [],
@@ -174,7 +174,8 @@ const AuthCodeField = forwardRef<HTMLDivElement, AuthCodeFieldProps>(
     const registerInputRef = useCallback((ref: HTMLInputElement | null) => {
       if (ref) {
         if (!inputElements.current.has(ref)) {
-          inputElements.current.set(ref, true);
+          const position = inputElements.current.size;
+          inputElements.current.set(ref, position);
           setInputCount(inputElements.current.size);
         }
       }
@@ -451,6 +452,7 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
     setFocusedIndex,
     disabled,
     inputCount,
+    inputElements,
   } = context;
 
   const currentCharacter = context.value[index] || "";
@@ -459,9 +461,15 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
   );
   const nextEmptyOrLastIndex =
     firstEmptyIndex === -1 ? inputCount - 1 : firstEmptyIndex;
-  const mergedInputRef = useCallback(mergeRefs(registerInputRef), [
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const mergedInputRef = useCallback(mergeRefs(registerInputRef, inputRef), [
     registerInputRef,
   ]);
+
+  const inputPosition = inputRef.current
+    ? (inputElements.get(inputRef.current) ?? 0) + 1
+    : index + 1;
+
   return (
     <input
       type={context.type}
@@ -469,9 +477,7 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
       ref={mergedInputRef}
       inputMode={validation.inputMode}
       pattern={validation.pattern}
-      aria-label={`One Time Password Character ${
-        index + 1
-      } out of ${inputCount}`}
+      aria-label={`One Time Password Character ${inputPosition} out of ${inputCount}`}
       disabled={disabled}
       autoComplete="off"
       autoCorrect="off"
@@ -759,7 +765,7 @@ interface AuthCodeContextValue {
   setFocusedIndex: (index: number) => void;
   disabled: boolean;
   inputCount: number;
-  inputElements: Map<HTMLInputElement, true>;
+  inputElements: Map<HTMLInputElement, number>;
 }
 
 type DefaultInputTypes = "alpha" | "alphanumeric" | "numeric";

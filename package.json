@@ -1,6 +1,6 @@
 {
   "name": "awesome-auth-input",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A headless, accessible, and fully-typed React component for OTP/auth code inputs with support for numeric, alphabetic, and custom validation patterns.",
   "type": "module",
   "main": "./dist/index.cjs",

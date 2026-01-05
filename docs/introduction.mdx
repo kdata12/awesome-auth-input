@@ -1,0 +1,73 @@
+---
+title: Introduction
+description: A headless, accessible React component for OTP and auth code inputs
+---
+
+# awesome-auth-input
+
+A headless, accessible, and fully-typed React component for OTP/auth code inputs with support for numeric, alphabetic, and custom validation patterns.
+
+<CardGroup cols={2}>
+  <Card title="Headless" icon="wand-magic-sparkles">
+    Bring your own styles. No CSS included, complete styling freedom.
+  </Card>
+  <Card title="Accessible" icon="universal-access">
+    Full keyboard navigation, screen reader support, and ARIA labels.
+  </Card>
+  <Card title="Flexible Validation" icon="shield-check">
+    Numeric, alphabetic, alphanumeric, or custom regex patterns.
+  </Card>
+  <Card title="TypeScript" icon="code">
+    Fully typed with exported types for excellent DX.
+  </Card>
+</CardGroup>
+
+## Features
+
+- **Headless** - Bring your own styles, no CSS included
+- **Accessible** - Full keyboard navigation, screen reader support, ARIA labels
+- **Flexible validation** - Numeric, alphabetic, alphanumeric, or custom regex patterns
+- **Controlled & uncontrolled** - Works both ways
+- **Auto-submit** - Optional auto-submit when all fields are filled
+- **Form integration** - Hidden input for native form submission
+- **Password mode** - Mask input characters
+- **Paste support** - Paste codes directly
+- **TypeScript** - Fully typed with exported types
+- **Zero dependencies** - Only React as a peer dependency
+
+## Quick Example
+
+```tsx
+import { AuthCode } from "awesome-auth-input";
+
+function OTPInput() {
+  return (
+    <AuthCode.Group onComplete={(code) => console.log("Code:", code)}>
+      <AuthCode.Input index={0} />
+      <AuthCode.Input index={1} />
+      <AuthCode.Input index={2} />
+      <AuthCode.Input index={3} />
+      <AuthCode.Input index={4} />
+      <AuthCode.Input index={5} />
+    </AuthCode.Group>
+  );
+}
+```
+
+## Requirements
+
+<Note>
+  This package requires **React 18.0.0 or higher** due to its use of the
+  `flushSync` API for synchronous state updates.
+</Note>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Get started with npm, yarn, or pnpm
+  </Card>
+  <Card title="Basic Examples" icon="play" href="/examples/basic">
+    See the component in action
+  </Card>
+</CardGroup>

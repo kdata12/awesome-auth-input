@@ -1,0 +1,111 @@
+---
+title: Installation
+description: Install awesome-auth-input in your React project
+---
+
+# Installation
+
+Install the package using your preferred package manager.
+
+<CodeGroup>
+
+```bash npm
+npm install awesome-auth-input
+```
+
+```bash yarn
+yarn add awesome-auth-input
+```
+
+```bash pnpm
+pnpm add awesome-auth-input
+```
+
+</CodeGroup>
+
+## Requirements
+
+<Warning>
+  **React 18+ Required**: This package uses React 18's `flushSync` API for optimal focus management. Make sure your project uses React 18.0.0 or higher.
+</Warning>
+
+```json package.json
+{
+  "dependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  }
+}
+```
+
+## Basic Setup
+
+After installation, import the component and start using it:
+
+```tsx
+import { AuthCode } from 'awesome-auth-input';
+
+function App() {
+  return (
+    <AuthCode.Group onComplete={(code) => verifyCode(code)}>
+      <AuthCode.Input index={0} />
+      <AuthCode.Input index={1} />
+      <AuthCode.Input index={2} />
+      <AuthCode.Input index={3} />
+    </AuthCode.Group>
+  );
+}
+```
+
+## TypeScript
+
+The package is written in TypeScript and includes type definitions. Import types as needed:
+
+```tsx
+import type {
+  AuthCodeGroupProps,
+  AuthCodeInputProps,
+  ValidationPattern,
+  CustomValidation,
+} from 'awesome-auth-input';
+```
+
+## Styling
+
+The component is completely **headless** - it doesn't include any CSS. You have full control over styling:
+
+```css
+.otp-group {
+  display: flex;
+  gap: 8px;
+}
+
+.otp-input {
+  width: 48px;
+  height: 56px;
+  text-align: center;
+  font-size: 24px;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+}
+
+.otp-input:focus {
+  outline: none;
+  border-color: #0070f3;
+  box-shadow: 0 0 0 3px rgba(0, 112, 243, 0.15);
+}
+```
+
+```tsx
+<AuthCode.Group className="otp-group">
+  <AuthCode.Input index={0} className="otp-input" />
+  <AuthCode.Input index={1} className="otp-input" />
+  <AuthCode.Input index={2} className="otp-input" />
+  <AuthCode.Input index={3} className="otp-input" />
+</AuthCode.Group>
+```
+
+<Card title="Next: Basic Examples" icon="arrow-right" href="/examples/basic">
+  See the component in action with interactive examples
+</Card>
+

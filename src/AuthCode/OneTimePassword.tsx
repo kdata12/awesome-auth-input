@@ -789,7 +789,7 @@ type FieldUpdateAction =
   | { type: "CLEAR_CHAR"; index: number }
   | { type: "NAVIGATE_PREVIOUS"; index: number }
   | { type: "NAVIGATE_NEXT"; index: number }
-  | { type: "CLEAR_ALL" };
+  | { type: "CLEAR_ALL" }
 
 // =================================================
 // EXPORTS

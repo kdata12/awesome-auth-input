@@ -226,14 +226,18 @@ const AuthCodeField = forwardRef<HTMLDivElement, AuthCodeFieldProps>(
             return value[i] ?? "";
           });
 
-          flushSync(() => setValue(newValue));
+          flushSync(() => {
+            setValue(newValue);
+          });
 
           if (insertionIndex < inputs.length - 1) {
             requestAnimationFrame(() =>
               focusInput(inputs.at(insertionIndex + 1))
             );
           } else {
-            requestAnimationFrame(() => focusInput(inputs.at(insertionIndex)));
+            requestAnimationFrame(() => {
+              focusInput(inputs.at(insertionIndex));
+            });
           }
           return;
         }

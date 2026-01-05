@@ -390,6 +390,10 @@ const AuthCodeField = forwardRef<HTMLDivElement, AuthCodeFieldProps>(
             dispatch({ type: "PASTE", value: pastedText });
           }}
           {...divProps}
+          onCopy={mergeEventHandlers(divProps.onCopy, (event) => {
+            event.preventDefault();
+            event.clipboardData.setData("text/plain", value.join(""));
+          })}
         >
           <AuthCodeHiddenInput />
           {children}

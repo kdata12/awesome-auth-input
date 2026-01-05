@@ -403,6 +403,8 @@ const AuthCodeField = forwardRef<HTMLDivElement, AuthCodeFieldProps>(
   }
 );
 
+AuthCodeField.displayName = "AuthCode.Group";
+
 const AuthCodeHiddenInput = forwardRef<
   HTMLInputElement,
   Omit<React.ComponentProps<"input">, "ref">
@@ -429,6 +431,8 @@ const AuthCodeHiddenInput = forwardRef<
     />
   );
 });
+
+AuthCodeHiddenInput.displayName = "AuthCode.HiddenInput";
 
 /**
  * Input component for entering a single character of the auth code.

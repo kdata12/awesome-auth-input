@@ -800,3 +800,10 @@ export {
   AuthCodeInput as Input,
   AuthCodeHiddenInput as HiddenInput,
 };
+
+export type {
+  AuthCodeFieldProps as AuthCodeGroupProps,
+  AuthCodeInputProps,
+  ValidationPattern,
+  CustomValidation,
+};

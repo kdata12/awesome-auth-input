@@ -316,3 +316,96 @@ export const WithSeparator: Story = {
     </AuthCode.Group>
   ),
 };
+
+/**
+ * Copy functionality - demonstrates copying the entire code value.
+ * Enter some digits and use Cmd+C (Mac) or Ctrl+C (Windows/Linux) to copy.
+ */
+export const CopyValue: Story = {
+  render: function CopyStory(args) {
+    const [copyValue, setCopyValue] = useState("");
+    const [lastCopied, setLastCopied] = useState<string>("");
+
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "16px",
+          alignItems: "center",
+        }}
+      >
+        <div style={{ textAlign: "center", marginBottom: "8px" }}>
+          <p style={{ margin: "0 0 8px 0", fontSize: "14px", color: "#666" }}>
+            Enter a code and press{" "}
+            <kbd
+              style={{
+                padding: "2px 6px",
+                background: "#f0f0f0",
+                border: "1px solid #ccc",
+                borderRadius: "4px",
+                fontFamily: "monospace",
+              }}
+            >
+              Cmd+C
+            </kbd>{" "}
+            or{" "}
+            <kbd
+              style={{
+                padding: "2px 6px",
+                background: "#f0f0f0",
+                border: "1px solid #ccc",
+                borderRadius: "4px",
+                fontFamily: "monospace",
+              }}
+            >
+              Ctrl+C
+            </kbd>{" "}
+            to copy
+          </p>
+        </div>
+
+        <AuthCode.Group
+          {...args}
+          className="auth-code-group"
+          value={copyValue}
+          // Won't need this onValueChange in production - this is just show the copied value in storybook
+          onValueChange={setCopyValue}
+          defaultValue="123456"
+          onCopy={() => {
+            setLastCopied(copyValue);
+          }}
+        >
+          <AuthCode.Input index={0} className="auth-code-input" />
+          <AuthCode.Input index={1} className="auth-code-input" />
+          <AuthCode.Input index={2} className="auth-code-input" />
+          <AuthCode.Input index={3} className="auth-code-input" />
+          <AuthCode.Input index={4} className="auth-code-input" />
+          <AuthCode.Input index={5} className="auth-code-input" />
+        </AuthCode.Group>
+
+        <div
+          style={{ fontFamily: "monospace", color: "#666", minHeight: "20px" }}
+        >
+          Current value: "{copyValue}"
+        </div>
+
+        {lastCopied && (
+          <div
+            style={{
+              padding: "12px 16px",
+              background: "#22c55e20",
+              border: "1px solid #22c55e",
+              borderRadius: "6px",
+              color: "#15803d",
+              fontFamily: "monospace",
+              fontSize: "14px",
+            }}
+          >
+            ✓ Copied to clipboard: <strong>{lastCopied}</strong>
+          </div>
+        )}
+      </div>
+    );
+  },
+};

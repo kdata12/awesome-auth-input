@@ -335,6 +335,8 @@ const AuthCodeField = forwardRef<HTMLDivElement, AuthCodeFieldProps>(
       }
     };
 
+    const concatenatedValue = useMemo(() => value.join(""), [value]);
+
     useEffect(() => {
       const concatenatedValue = value.join("");
       const isCodeFullyEntered =
@@ -349,7 +351,7 @@ const AuthCodeField = forwardRef<HTMLDivElement, AuthCodeFieldProps>(
       if (autoSubmit) {
         hiddenInputRef.current?.form?.requestSubmit();
       }
-    }, [value, inputCount, onComplete, autoSubmit]);
+    }, [concatenatedValue, onComplete, inputCount, autoSubmit]);
 
     const contextValue = useMemo(
       () => ({

@@ -338,7 +338,12 @@ const AuthCodeField = forwardRef<HTMLDivElement, AuthCodeFieldProps>(
     const concatenatedValue = useMemo(() => value.join(""), [value]);
 
     useEffect(() => {
-      const concatenatedValue = value.join("");
+      if (value.length === 0) {
+        setFocusedIndex(0);
+      }
+    }, [value]);
+
+    useEffect(() => {
       const isCodeFullyEntered =
         concatenatedValue.length === inputCount &&
         value.every((v) => v !== "") &&

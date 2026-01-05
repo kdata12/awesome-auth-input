@@ -1,0 +1,136 @@
+---
+title: AuthCode.Input
+description: Individual input field for a single character of the auth code
+---
+
+# AuthCode.Input
+
+Individual input field for a single character of the auth code. Must be used within `<AuthCode.Group>`.
+
+```tsx
+import { AuthCode } from "awesome-auth-input";
+
+<AuthCode.Group>
+  <AuthCode.Input index={0} />
+  <AuthCode.Input index={1} />
+  <AuthCode.Input index={2} />
+  <AuthCode.Input index={3} />
+</AuthCode.Group>;
+```
+
+## Props
+
+<ResponseField name="index" type="number" required>
+  The position of this input (0-based). Must be unique within the group.
+</ResponseField>
+
+<ResponseField name="className" type="string">
+  CSS class name for styling the input.
+</ResponseField>
+
+<ResponseField name="style" type="CSSProperties">
+  Inline styles for the input.
+</ResponseField>
+
+<ResponseField name="onKeyDown" type="(event: KeyboardEvent) => void">
+  Custom keydown handler. Called before the component's internal handler.
+</ResponseField>
+
+<Note>
+  Most standard `input` props are supported (className, style, onKeyDown, etc.),
+  except for controlled props like `value`, `disabled`, and `type` which are
+  managed by the parent `AuthCode.Group`.
+</Note>
+
+## Keyboard Navigation
+
+The component supports full keyboard navigation:
+
+| Key                    | Action                                        |
+| ---------------------- | --------------------------------------------- |
+| `Arrow Left`           | Move to previous input                        |
+| `Arrow Right`          | Move to next input                            |
+| `Backspace`            | Delete current character and move to previous |
+| `Ctrl/Cmd + Backspace` | Clear all inputs                              |
+| `Enter`                | Submit the form                               |
+
+## Accessibility
+
+Each input includes proper ARIA attributes:
+
+```html
+<input
+  aria-label="One Time Password Character 1 out of 4"
+  inputmode="numeric"
+  pattern="[0-9]{1}"
+  ...
+/>
+```
+
+The component also:
+
+- Uses roving tabindex for focus management
+- Supports screen readers
+- Disables password managers with data attributes
+
+## Styling Examples
+
+### Basic Styling
+
+```css
+.otp-input {
+  width: 48px;
+  height: 56px;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 600;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.otp-input:focus {
+  outline: none;
+  border-color: #0070f3;
+  box-shadow: 0 0 0 3px rgba(0, 112, 243, 0.15);
+}
+```
+
+### With Tailwind CSS
+
+```tsx
+<AuthCode.Group className="flex gap-2">
+  <AuthCode.Input
+    index={0}
+    className="w-12 h-14 text-center text-2xl font-semibold border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+  />
+  {/* ... more inputs */}
+</AuthCode.Group>
+```
+
+### With Separator
+
+```tsx
+<AuthCode.Group className="flex items-center gap-2">
+  <AuthCode.Input index={0} className="otp-input" />
+  <AuthCode.Input index={1} className="otp-input" />
+  <AuthCode.Input index={2} className="otp-input" />
+  <span className="text-2xl text-gray-400 mx-2">-</span>
+  <AuthCode.Input index={3} className="otp-input" />
+  <AuthCode.Input index={4} className="otp-input" />
+  <AuthCode.Input index={5} className="otp-input" />
+</AuthCode.Group>
+```
+
+## Password Mode
+
+When the parent `AuthCode.Group` has `type="password"`, inputs will mask their values:
+
+```tsx
+<AuthCode.Group type="password">
+  <AuthCode.Input index={0} /> {/* Shows dots instead of characters */}
+  <AuthCode.Input index={1} />
+  <AuthCode.Input index={2} />
+  <AuthCode.Input index={3} />
+</AuthCode.Group>
+```

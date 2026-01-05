@@ -1,0 +1,67 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "awesome-auth-input",
+  "logo": {
+    "dark": "/logo-dark.svg",
+    "light": "/logo-light.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#0070f3",
+    "light": "#3b82f6",
+    "dark": "#1d4ed8",
+    "anchors": {
+      "from": "#0070f3",
+      "to": "#3b82f6"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/your-username/awesome-auth-input"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Get Started",
+    "url": "/introduction"
+  },
+  "anchors": [
+    {
+      "name": "NPM",
+      "icon": "npm",
+      "url": "https://www.npmjs.com/package/awesome-auth-input"
+    },
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/your-username/awesome-auth-input"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "introduction",
+        "installation"
+      ]
+    },
+    {
+      "group": "Components",
+      "pages": [
+        "components/group",
+        "components/input"
+      ]
+    },
+    {
+      "group": "Examples",
+      "pages": [
+        "examples/basic",
+        "examples/validation",
+        "examples/forms"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/your-username/awesome-auth-input"
+  }
+}

@@ -1,0 +1,266 @@
+---
+title: Form Integration
+description: Integrating AuthCode with HTML forms and React form libraries
+---
+
+import { AuthCodeFormDemo } from "../_components/AuthCodeDemo";
+
+# Form Integration
+
+The AuthCode component is designed to work seamlessly with HTML forms and popular form libraries.
+
+## Interactive Demo
+
+<AuthCodeFormDemo />
+
+## Basic Form Usage
+
+The component includes a hidden input that contains the full code value for form submission:
+
+```tsx
+import { AuthCode } from "awesome-auth-input";
+
+function OTPForm() {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const code = formData.get("otp");
+    console.log("Submitted code:", code);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <AuthCode.Group name="otp">
+        <AuthCode.Input index={0} />
+        <AuthCode.Input index={1} />
+        <AuthCode.Input index={2} />
+        <AuthCode.Input index={3} />
+        <AuthCode.Input index={4} />
+        <AuthCode.Input index={5} />
+      </AuthCode.Group>
+      <button type="submit">Verify</button>
+    </form>
+  );
+}
+```
+
+## Auto-Submit
+
+By default, the form will automatically submit when all fields are filled:
+
+```tsx
+<AuthCode.Group
+  name="otp"
+  autoSubmit={true} // Default is true
+  onComplete={(code) => {
+    console.log("Code complete:", code);
+    // This fires right before auto-submit
+  }}
+>
+  {/* inputs */}
+</AuthCode.Group>
+```
+
+To disable auto-submit:
+
+```tsx
+<AuthCode.Group name="otp" autoSubmit={false}>
+  {/* inputs */}
+</AuthCode.Group>
+```
+
+## Controlled Form State
+
+For more control, use the controlled mode with your form state:
+
+```tsx
+import { useState } from "react";
+import { AuthCode } from "awesome-auth-input";
+
+function ControlledForm() {
+  const [code, setCode] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      await verifyCode(code);
+      // Success!
+    } catch (error) {
+      setCode(""); // Clear on error
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <AuthCode.Group
+        value={code}
+        onValueChange={setCode}
+        disabled={isSubmitting}
+        autoSubmit={false}
+      >
+        <AuthCode.Input index={0} />
+        <AuthCode.Input index={1} />
+        <AuthCode.Input index={2} />
+        <AuthCode.Input index={3} />
+        <AuthCode.Input index={4} />
+        <AuthCode.Input index={5} />
+      </AuthCode.Group>
+
+      <button type="submit" disabled={code.length !== 6 || isSubmitting}>
+        {isSubmitting ? "Verifying..." : "Verify"}
+      </button>
+    </form>
+  );
+}
+```
+
+## With React Hook Form
+
+```tsx
+import { useForm, Controller } from "react-hook-form";
+import { AuthCode } from "awesome-auth-input";
+
+function HookFormExample() {
+  const { control, handleSubmit } = useForm({
+    defaultValues: { otp: "" },
+  });
+
+  const onSubmit = (data) => {
+    console.log("OTP:", data.otp);
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <Controller
+        name="otp"
+        control={control}
+        rules={{ required: true, minLength: 6 }}
+        render={({ field }) => (
+          <AuthCode.Group
+            value={field.value}
+            onValueChange={field.onChange}
+            autoSubmit={false}
+          >
+            <AuthCode.Input index={0} />
+            <AuthCode.Input index={1} />
+            <AuthCode.Input index={2} />
+            <AuthCode.Input index={3} />
+            <AuthCode.Input index={4} />
+            <AuthCode.Input index={5} />
+          </AuthCode.Group>
+        )}
+      />
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+```
+
+## With Formik
+
+```tsx
+import { Formik, Form } from "formik";
+import { AuthCode } from "awesome-auth-input";
+
+function FormikExample() {
+  return (
+    <Formik
+      initialValues={{ otp: "" }}
+      onSubmit={(values) => {
+        console.log("OTP:", values.otp);
+      }}
+    >
+      {({ values, setFieldValue }) => (
+        <Form>
+          <AuthCode.Group
+            value={values.otp}
+            onValueChange={(value) => setFieldValue("otp", value)}
+            autoSubmit={false}
+          >
+            <AuthCode.Input index={0} />
+            <AuthCode.Input index={1} />
+            <AuthCode.Input index={2} />
+            <AuthCode.Input index={3} />
+            <AuthCode.Input index={4} />
+            <AuthCode.Input index={5} />
+          </AuthCode.Group>
+          <button type="submit">Submit</button>
+        </Form>
+      )}
+    </Formik>
+  );
+}
+```
+
+## Server Actions (Next.js)
+
+```tsx
+// app/verify/page.tsx
+import { AuthCode } from "awesome-auth-input";
+
+async function verifyOTP(formData: FormData) {
+  "use server";
+  const code = formData.get("otp");
+  // Verify with your backend
+}
+
+export default function VerifyPage() {
+  return (
+    <form action={verifyOTP}>
+      <AuthCode.Group name="otp">
+        <AuthCode.Input index={0} />
+        <AuthCode.Input index={1} />
+        <AuthCode.Input index={2} />
+        <AuthCode.Input index={3} />
+        <AuthCode.Input index={4} />
+        <AuthCode.Input index={5} />
+      </AuthCode.Group>
+      <button type="submit">Verify</button>
+    </form>
+  );
+}
+```
+
+## Error Handling
+
+Handle verification errors by clearing the input and showing a message:
+
+```tsx
+function OTPWithError() {
+  const [code, setCode] = useState("");
+  const [error, setError] = useState("");
+
+  const handleComplete = async (value: string) => {
+    try {
+      await verifyCode(value);
+    } catch (err) {
+      setError("Invalid code. Please try again.");
+      setCode(""); // Clear the input
+    }
+  };
+
+  return (
+    <div>
+      <AuthCode.Group
+        value={code}
+        onValueChange={setCode}
+        onComplete={handleComplete}
+      >
+        <AuthCode.Input index={0} />
+        <AuthCode.Input index={1} />
+        <AuthCode.Input index={2} />
+        <AuthCode.Input index={3} />
+        <AuthCode.Input index={4} />
+        <AuthCode.Input index={5} />
+      </AuthCode.Group>
+
+      {error && <p style={{ color: "red" }}>{error}</p>}
+    </div>
+  );
+}
+```

@@ -1,0 +1,171 @@
+---
+title: Validation Patterns
+description: Different validation types for auth code inputs
+---
+
+import { AuthCodeDemo } from "../_components/AuthCodeDemo";
+
+# Validation Patterns
+
+The AuthCode component supports multiple validation patterns to restrict what characters users can enter.
+
+## Numeric (Default)
+
+Only accepts digits 0-9. This is the default validation pattern.
+
+<AuthCodeDemo digits={6} validation="numeric" />
+
+```tsx
+import { AuthCode } from "awesome-auth-input";
+
+function NumericCode() {
+  return (
+    <AuthCode.Group validation={{ type: "numeric" }}>
+      <AuthCode.Input index={0} />
+      <AuthCode.Input index={1} />
+      <AuthCode.Input index={2} />
+      <AuthCode.Input index={3} />
+    </AuthCode.Group>
+  );
+}
+```
+
+<Note>
+  Numeric validation also sets `inputMode="numeric"` on mobile devices, showing
+  a numeric keypad.
+</Note>
+
+## Alphabetic
+
+Only accepts letters a-z and A-Z:
+
+<AuthCodeDemo digits={4} validation="alpha" />
+
+```tsx
+import { AuthCode } from "awesome-auth-input";
+
+function AlphaCode() {
+  return (
+    <AuthCode.Group validation={{ type: "alpha" }}>
+      <AuthCode.Input index={0} />
+      <AuthCode.Input index={1} />
+      <AuthCode.Input index={2} />
+      <AuthCode.Input index={3} />
+    </AuthCode.Group>
+  );
+}
+```
+
+## Alphanumeric
+
+Accepts both letters and numbers:
+
+<AuthCodeDemo digits={6} validation="alphanumeric" />
+
+```tsx
+import { AuthCode } from "awesome-auth-input";
+
+function AlphanumericCode() {
+  return (
+    <AuthCode.Group validation={{ type: "alphanumeric" }}>
+      <AuthCode.Input index={0} />
+      <AuthCode.Input index={1} />
+      <AuthCode.Input index={2} />
+      <AuthCode.Input index={3} />
+      <AuthCode.Input index={4} />
+      <AuthCode.Input index={5} />
+    </AuthCode.Group>
+  );
+}
+```
+
+## Custom Validation
+
+For specialized requirements, use custom validation with a regex pattern:
+
+### Uppercase Letters Only
+
+```tsx
+import { AuthCode } from "awesome-auth-input";
+
+function UppercaseCode() {
+  return (
+    <AuthCode.Group
+      validation={{
+        type: "custom",
+        regex: /^[A-Z]$/,
+        pattern: "[A-Z]{1}",
+        inputMode: "text",
+      }}
+    >
+      <AuthCode.Input index={0} />
+      <AuthCode.Input index={1} />
+      <AuthCode.Input index={2} />
+      <AuthCode.Input index={3} />
+    </AuthCode.Group>
+  );
+}
+```
+
+### Hexadecimal Characters
+
+```tsx
+import { AuthCode } from "awesome-auth-input";
+
+function HexCode() {
+  return (
+    <AuthCode.Group
+      validation={{
+        type: "custom",
+        regex: /^[0-9A-Fa-f]$/,
+        pattern: "[0-9A-Fa-f]{1}",
+        inputMode: "text",
+      }}
+    >
+      <AuthCode.Input index={0} />
+      <AuthCode.Input index={1} />
+      <AuthCode.Input index={2} />
+      <AuthCode.Input index={3} />
+      <AuthCode.Input index={4} />
+      <AuthCode.Input index={5} />
+    </AuthCode.Group>
+  );
+}
+```
+
+### Digits 1-5 Only
+
+```tsx
+import { AuthCode } from "awesome-auth-input";
+
+function LimitedDigits() {
+  return (
+    <AuthCode.Group
+      validation={{
+        type: "custom",
+        regex: /^[1-5]$/,
+        pattern: "[1-5]{1}",
+        inputMode: "numeric",
+      }}
+    >
+      <AuthCode.Input index={0} />
+      <AuthCode.Input index={1} />
+      <AuthCode.Input index={2} />
+      <AuthCode.Input index={3} />
+    </AuthCode.Group>
+  );
+}
+```
+
+## Custom Validation Properties
+
+| Property    | Type                            | Description                                   |
+| ----------- | ------------------------------- | --------------------------------------------- |
+| `type`      | `"custom"`                      | Must be set to "custom"                       |
+| `regex`     | `RegExp`                        | Regular expression to validate each character |
+| `pattern`   | `string`                        | HTML pattern attribute for the input          |
+| `inputMode` | `"text" \| "numeric" \| "none"` | Virtual keyboard type on mobile               |
+
+<Card title="Next: Form Integration" icon="arrow-right" href="/examples/forms">
+  Learn how to integrate with HTML forms
+</Card>

@@ -1,0 +1,148 @@
+---
+title: Basic Examples
+description: Common usage patterns for the AuthCode component
+---
+
+import { AuthCodeDemo } from "../_components/AuthCodeDemo";
+
+# Basic Examples
+
+Learn how to use the AuthCode component with these common patterns.
+
+## 6-Digit OTP
+
+The most common use case - a 6-digit numeric verification code:
+
+<AuthCodeDemo digits={6} validation="numeric" />
+
+```tsx
+import { AuthCode } from "awesome-auth-input";
+
+function SixDigitOTP() {
+  return (
+    <AuthCode.Group onComplete={(code) => verifyCode(code)}>
+      <AuthCode.Input index={0} />
+      <AuthCode.Input index={1} />
+      <AuthCode.Input index={2} />
+      <AuthCode.Input index={3} />
+      <AuthCode.Input index={4} />
+      <AuthCode.Input index={5} />
+    </AuthCode.Group>
+  );
+}
+```
+
+## 4-Digit PIN
+
+A shorter 4-digit code, commonly used for PINs:
+
+<AuthCodeDemo digits={4} validation="numeric" />
+
+```tsx
+import { AuthCode } from "awesome-auth-input";
+
+function FourDigitPIN() {
+  return (
+    <AuthCode.Group onComplete={(code) => console.log("PIN:", code)}>
+      <AuthCode.Input index={0} />
+      <AuthCode.Input index={1} />
+      <AuthCode.Input index={2} />
+      <AuthCode.Input index={3} />
+    </AuthCode.Group>
+  );
+}
+```
+
+## Password Mode
+
+Mask the input characters for sensitive codes:
+
+<AuthCodeDemo digits={4} validation="numeric" type="password" />
+
+```tsx
+import { AuthCode } from "awesome-auth-input";
+
+function MaskedPIN() {
+  return (
+    <AuthCode.Group type="password" onComplete={(code) => console.log(code)}>
+      <AuthCode.Input index={0} />
+      <AuthCode.Input index={1} />
+      <AuthCode.Input index={2} />
+      <AuthCode.Input index={3} />
+    </AuthCode.Group>
+  );
+}
+```
+
+## With Separator
+
+Add visual separators between groups of digits:
+
+```tsx
+import { AuthCode } from "awesome-auth-input";
+import "./styles.css";
+
+function SeparatedCode() {
+  return (
+    <AuthCode.Group className="code-group">
+      <AuthCode.Input index={0} className="code-input" />
+      <AuthCode.Input index={1} className="code-input" />
+      <AuthCode.Input index={2} className="code-input" />
+      <span className="separator">-</span>
+      <AuthCode.Input index={3} className="code-input" />
+      <AuthCode.Input index={4} className="code-input" />
+      <AuthCode.Input index={5} className="code-input" />
+    </AuthCode.Group>
+  );
+}
+```
+
+```css styles.css
+.code-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.code-input {
+  width: 48px;
+  height: 56px;
+  text-align: center;
+  font-size: 24px;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+}
+
+.separator {
+  font-size: 24px;
+  color: #9ca3af;
+  margin: 0 4px;
+}
+```
+
+## Default Value
+
+Pre-fill the input with a default value:
+
+```tsx
+import { AuthCode } from "awesome-auth-input";
+
+function PrefilledCode() {
+  return (
+    <AuthCode.Group defaultValue="12">
+      <AuthCode.Input index={0} />
+      <AuthCode.Input index={1} />
+      <AuthCode.Input index={2} />
+      <AuthCode.Input index={3} />
+    </AuthCode.Group>
+  );
+}
+```
+
+<Card
+  title="Next: Validation Patterns"
+  icon="arrow-right"
+  href="/examples/validation"
+>
+  Learn about different validation types
+</Card>

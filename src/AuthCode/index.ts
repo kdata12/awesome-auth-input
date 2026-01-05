@@ -1,1 +1,2 @@
-export * as default from './OneTimePassword.tsx';
+export * from './OneTimePassword';
+export { Group as default } from './OneTimePassword';

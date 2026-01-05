@@ -201,7 +201,6 @@ const AuthCodeField = forwardRef<HTMLDivElement, AuthCodeFieldProps>(
 
     const hiddenInputRef = useRef<HTMLInputElement | null>(null);
 
-    // consider removing useEffectEvent
     const dispatch = (action: FieldUpdateAction) => {
       // use an ordered dictionary instead?
       const inputs = Array.from(inputElements.current.keys());
@@ -259,7 +258,6 @@ const AuthCodeField = forwardRef<HTMLDivElement, AuthCodeFieldProps>(
           if (index != 0) {
             focusInput(inputs.at(index - 1));
           } else {
-            // index is 0
             focusInput(inputs.at(0));
           }
           return;
@@ -319,9 +317,6 @@ const AuthCodeField = forwardRef<HTMLDivElement, AuthCodeFieldProps>(
           const firstEmpty = Array.from({ length: inputs.length }).findIndex(
             (_, i) => !value[i]
           );
-
-          // BUG: if a value was deleted in the middle of a sequence, then we would
-          // not be able to navigate to the right side of the sequence
 
           focusInput(inputs.at(firstEmpty));
           return;
@@ -484,8 +479,8 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
       // Disable password managers
       data-1p-ignore // 1Password
       data-lpignore="true" // LastPass
-      data-form-type="other" // Generic password managers
       data-bwignore="true" // Bitwarden
+      data-form-type="other" // Generic password managers
       {...props}
       onPointerDown={(event) => {
         // A click/touch on an input can cause the input to be out of selection so
@@ -521,7 +516,6 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
       }}
       onChange={(event) => {
         const newInputValue = event.target.value;
-        console.log("changing at index: ", index);
         // check if value is valid against pattern
         if (event.target.validity.patternMismatch) return;
         dispatch({ type: "TYPE_CHAR", char: newInputValue, index });
@@ -611,6 +605,8 @@ export function AuthCodeInput({ index, ...props }: AuthCodeInputProps) {
   );
 }
 
+AuthCodeInput.displayName = "AuthCode.Input";
+
 // =================================================
 // CONTEXT
 // =================================================
@@ -681,8 +677,9 @@ function mergeRefs<T = any>(...refs: MergedRef<T>[]): React.RefCallback<T> {
 const focusInput = (element: HTMLInputElement | undefined) => {
   if (!element) return;
   if (element.disabled) return;
-  // ownerDocument is the opened 'window' that owns the element
-  // e.g. popups or a browser-in-browser
+
+  // Using ownerDocument.activeElement to check focus correctly across
+  // different document contexts (iframes, popups, shadow DOM)
   if (element.ownerDocument.activeElement === element) {
     element.select();
   } else {
@@ -804,7 +801,7 @@ type FieldUpdateAction =
   | { type: "CLEAR_CHAR"; index: number }
   | { type: "NAVIGATE_PREVIOUS"; index: number }
   | { type: "NAVIGATE_NEXT"; index: number }
-  | { type: "CLEAR_ALL" }
+  | { type: "CLEAR_ALL" };
 
 // =================================================
 // EXPORTS

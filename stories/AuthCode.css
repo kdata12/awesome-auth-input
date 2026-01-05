@@ -1,0 +1,55 @@
+.auth-code-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-code-input {
+  width: 48px;
+  height: 56px;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas,
+    "Liberation Mono", Menlo, monospace;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  color: #1f2937;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  caret-color: #0070f3;
+}
+
+.auth-code-input:focus {
+  outline: none;
+  border-color: #0070f3;
+  box-shadow: 0 0 0 3px rgba(0, 112, 243, 0.15);
+}
+
+.auth-code-input:hover:not(:focus):not(:disabled) {
+  border-color: #9ca3af;
+}
+
+.auth-code-input:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.auth-code-input::placeholder {
+  color: #9ca3af;
+}
+
+/* Password mode - larger dots */
+.auth-code-input[type="password"] {
+  font-size: 32px;
+  letter-spacing: 0;
+}
+
+.auth-code-separator {
+  font-size: 24px;
+  font-weight: 500;
+  color: #9ca3af;
+  margin: 0 4px;
+  user-select: none;
+}

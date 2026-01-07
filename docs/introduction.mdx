@@ -22,6 +22,136 @@ A headless, accessible, and fully-typed React component for OTP/auth code inputs
   </Card>
 </CardGroup>
 
+
+```tsx
+function OTPInput() {
+  return (
+    <AuthCode.Group
+      className="otp-container"
+      onComplete={(code) => console.log("Code:", code)}
+    >
+      <AuthCode.Input index={0} className="otp-input" />
+      <AuthCode.Input index={1} className="otp-input" />
+      <AuthCode.Input index={2} className="otp-input" />
+      <AuthCode.Input index={3} className="otp-input" />
+      <AuthCode.Input index={4} className="otp-input" />
+      <AuthCode.Input index={5} className="otp-input" />
+    </AuthCode.Group>
+  );
+}
+```
+
+```css otp-styles.css
+.otp-container {
+  display: flex;
+  gap: 8px;
+}
+
+.otp-input {
+  width: 48px;
+  height: 56px;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 600;
+  font-family: ui-monospace, monospace;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  color: #1f2937;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.otp-input:focus {
+  border-color: #0070f3;
+  box-shadow: 0 0 0 3px rgba(0, 112, 243, 0.15);
+}
+```
+
+---
+
+## API Reference
+
+### AuthCode.Group Props
+
+The root component that manages state and validation for all child inputs.
+
+<ResponseField name="children" type="ReactNode" required>
+  The child components, typically `<AuthCode.Input>` components. All inputs must be direct or nested children of the Group.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  A string specifying a name for the input control. This name is submitted along
+  with the control's value when the form data is submitted.
+</ResponseField>
+
+<ResponseField name="validation" type="ValidationPattern" default='{ type: "numeric" }'>
+  Specifies what type of validation to apply for each character input.
+  
+  **Options:**
+  - `{ type: "numeric" }` - Numbers only (0-9)
+  - `{ type: "alpha" }` - Letters only (a-z, A-Z)  
+  - `{ type: "alphanumeric" }` - Letters and numbers
+  - `{ type: "custom", regex: RegExp, pattern: string, inputMode: string }` - Custom validation
+</ResponseField>
+
+<ResponseField name="autoSubmit" type="boolean" default="true">
+  Whether the component should automatically submit when all fields are filled.
+  If the field is associated with an HTML `form` element, the form's
+  `requestSubmit` method will be called.
+</ResponseField>
+
+<ResponseField name="onComplete" type="(value: string) => void">
+  Callback fired when all fields are filled. Receives the complete auth code
+  value as a string. This fires before auto-submit (if enabled).
+</ResponseField>
+
+<ResponseField name="value" type="string">
+  The controlled value of the field. When provided, the component operates in controlled mode. The string length must match the number of `<AuthCode.Input>` components.
+</ResponseField>
+
+<ResponseField name="onValueChange" type="(value: string) => void">
+  Callback fired whenever the field value changes. Use together with `value` to
+  create a controlled component.
+</ResponseField>
+
+<ResponseField name="defaultValue" type="string">
+  The initial value of the uncontrolled field. When provided without `value`,
+  the component operates in uncontrolled mode.
+</ResponseField>
+
+<ResponseField name="type" type='"text" | "password"' default='"text"'>
+  The type of control to render. When set to `"password"`, the input characters
+  will be masked with dots.
+</ResponseField>
+
+<ResponseField name="disabled" type="boolean" default="false">
+  Whether or not the input elements are disabled. When `true`, all inputs will
+  be non-interactive.
+</ResponseField>
+
+### AuthCode.Input Props
+
+<ResponseField name="index" type="number" required>
+  The position of this input (0-based). Must be unique within the group.
+</ResponseField>
+
+<ResponseField name="className" type="string">
+  CSS class name for styling the input element.
+</ResponseField>
+
+<ResponseField name="style" type="React.CSSProperties">
+  Inline styles for the input element.
+</ResponseField>
+
+<Note>
+  `AuthCode.Input` also accepts most standard HTML input attributes like
+  `onKeyDown`, `onFocus`, `onBlur`, etc. Props like `value`, `disabled`, and
+  `type` are managed by the parent `AuthCode.Group`.
+</Note>
+
+---
+
 ## Features
 
 - **Headless** - Bring your own styles, no CSS included
@@ -34,25 +164,6 @@ A headless, accessible, and fully-typed React component for OTP/auth code inputs
 - **Paste support** - Paste codes directly
 - **TypeScript** - Fully typed with exported types
 - **Zero dependencies** - Only React as a peer dependency
-
-## Quick Example
-
-```tsx
-import { AuthCode } from "awesome-auth-input";
-
-function OTPInput() {
-  return (
-    <AuthCode.Group onComplete={(code) => console.log("Code:", code)}>
-      <AuthCode.Input index={0} />
-      <AuthCode.Input index={1} />
-      <AuthCode.Input index={2} />
-      <AuthCode.Input index={3} />
-      <AuthCode.Input index={4} />
-      <AuthCode.Input index={5} />
-    </AuthCode.Group>
-  );
-}
-```
 
 ## Requirements
 
@@ -67,7 +178,13 @@ function OTPInput() {
   <Card title="Installation" icon="download" href="/installation">
     Get started with npm, yarn, or pnpm
   </Card>
+  <Card title="Creative Demos" icon="sparkles" href="/demos">
+    See beautiful design examples
+  </Card>
   <Card title="Basic Examples" icon="play" href="/examples/basic">
-    See the component in action
+    Common usage patterns
+  </Card>
+  <Card title="Form Integration" icon="file-lines" href="/examples/forms">
+    Use with React Hook Form, Formik, and more
   </Card>
 </CardGroup>

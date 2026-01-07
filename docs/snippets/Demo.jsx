@@ -1,8 +1,5 @@
 import React, { useState, useRef } from "react";
-import { AuthCode } from "awesome-auth-input";
-
-// Mintlify requires arrow function syntax for snippets
-// The function keyword is not supported
+import { AuthCodeInput, AuthCodeGroup } from "./AuthCode.jsx";
 
 export const AuthCodeDemo = ({
   digits = 6,
@@ -42,7 +39,7 @@ export const AuthCodeDemo = ({
         alignItems: "center",
       }}
     >
-      <AuthCode.Group
+      <AuthCodeGroup
         ref={groupRef}
         validation={{ type: validation }}
         type={type}
@@ -53,7 +50,7 @@ export const AuthCodeDemo = ({
         style={{ display: "flex", gap: "8px" }}
       >
         {Array.from({ length: digits }).map((_, index) => (
-          <AuthCode.Input
+          <AuthCodeInput
             key={index}
             index={index}
             style={{
@@ -80,7 +77,7 @@ export const AuthCodeDemo = ({
             }}
           />
         ))}
-      </AuthCode.Group>
+      </AuthCodeGroup>
 
       {showValue && (
         <div
@@ -131,7 +128,7 @@ export const AuthCodeFormDemo = () => {
         alignItems: "center",
       }}
     >
-      <AuthCode.Group
+      <AuthCodeGroup
         name="otp"
         value={value}
         onValueChange={setValue}
@@ -139,7 +136,7 @@ export const AuthCodeFormDemo = () => {
         style={{ display: "flex", gap: "8px" }}
       >
         {Array.from({ length: 6 }).map((_, index) => (
-          <AuthCode.Input
+          <AuthCodeInput
             key={index}
             index={index}
             style={{
@@ -157,7 +154,7 @@ export const AuthCodeFormDemo = () => {
             }}
           />
         ))}
-      </AuthCode.Group>
+      </AuthCodeGroup>
 
       <button
         type="submit"
@@ -184,217 +181,8 @@ export const AuthCodeFormDemo = () => {
   );
 };
 
-// =============================================================================
-// CREATIVE DEMO DESIGNS
-// =============================================================================
-
 /**
- * Design 1: Glassmorphism / Frosted Glass
- * Semi-transparent backgrounds with blur, soft shadows, light/airy aesthetic
- */
-export const GlassmorphismDemo = () => {
-  const [value, setValue] = useState("");
-  const [complete, setComplete] = useState(false);
-  const [focusedIndex, setFocusedIndex] = useState(null);
-  const groupRef = useRef(null);
-
-  const handleValueChange = (newValue) => {
-    setValue(newValue);
-    setComplete(newValue.length === 6);
-  };
-
-  const handleClear = () => {
-    setValue("");
-    setComplete(false);
-    const firstInput = groupRef.current?.querySelector(
-      "input:not([type=hidden])"
-    );
-    firstInput?.focus();
-  };
-
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: "24px",
-        padding: "48px",
-        background:
-          "linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)",
-        borderRadius: "24px",
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      {/* Floating orbs for depth */}
-      <div
-        style={{
-          position: "absolute",
-          width: "200px",
-          height: "200px",
-          background: "rgba(255,255,255,0.1)",
-          borderRadius: "50%",
-          top: "-50px",
-          right: "-50px",
-          filter: "blur(40px)",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          width: "150px",
-          height: "150px",
-          background: "rgba(255,255,255,0.15)",
-          borderRadius: "50%",
-          bottom: "-30px",
-          left: "-30px",
-          filter: "blur(30px)",
-        }}
-      />
-
-      <div
-        style={{
-          textAlign: "center",
-          zIndex: 1,
-        }}
-      >
-        <h3
-          style={{
-            margin: "0 0 8px 0",
-            color: "white",
-            fontSize: "20px",
-            fontWeight: 600,
-            fontFamily: "system-ui, -apple-system, sans-serif",
-            textShadow: "0 2px 10px rgba(0,0,0,0.2)",
-          }}
-        >
-          Enter verification code
-        </h3>
-        <p
-          style={{
-            margin: 0,
-            color: "rgba(255,255,255,0.8)",
-            fontSize: "14px",
-            fontFamily: "system-ui, -apple-system, sans-serif",
-          }}
-        >
-          We sent a code to your email
-        </p>
-      </div>
-
-      <AuthCode.Group
-        ref={groupRef}
-        value={value}
-        onValueChange={handleValueChange}
-        autoSubmit={false}
-        style={{
-          display: "flex",
-          gap: "12px",
-          padding: "24px 32px",
-          background: "rgba(255, 255, 255, 0.2)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          borderRadius: "20px",
-          border: "1px solid rgba(255, 255, 255, 0.3)",
-          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
-          zIndex: 1,
-        }}
-      >
-        {Array.from({ length: 6 }).map((_, index) => (
-          <AuthCode.Input
-            key={index}
-            index={index}
-            onFocus={() => setFocusedIndex(index)}
-            onBlur={() => setFocusedIndex(null)}
-            style={{
-              width: "52px",
-              height: "64px",
-              textAlign: "center",
-              fontSize: "28px",
-              fontWeight: 700,
-              fontFamily: "ui-monospace, SFMono-Regular, monospace",
-              border: "none",
-              borderRadius: "16px",
-              background:
-                focusedIndex === index
-                  ? "rgba(255, 255, 255, 0.5)"
-                  : "rgba(255, 255, 255, 0.25)",
-              color: "#1a1a2e",
-              outline: "none",
-              transition: "all 0.2s ease",
-              boxShadow:
-                focusedIndex === index
-                  ? "0 0 0 3px rgba(255,255,255,0.5), 0 4px 20px rgba(0,0,0,0.1)"
-                  : "0 2px 10px rgba(0,0,0,0.05)",
-              transform: focusedIndex === index ? "scale(1.05)" : "scale(1)",
-            }}
-          />
-        ))}
-      </AuthCode.Group>
-
-      <div style={{ display: "flex", gap: "12px", zIndex: 1 }}>
-        <button
-          onClick={handleClear}
-          style={{
-            padding: "12px 24px",
-            borderRadius: "12px",
-            border: "1px solid rgba(255,255,255,0.3)",
-            background: "rgba(255, 255, 255, 0.15)",
-            backdropFilter: "blur(10px)",
-            color: "white",
-            cursor: "pointer",
-            fontSize: "14px",
-            fontWeight: 500,
-            fontFamily: "system-ui, -apple-system, sans-serif",
-            transition: "all 0.2s ease",
-          }}
-        >
-          Clear
-        </button>
-        <button
-          disabled={!complete}
-          style={{
-            padding: "12px 32px",
-            borderRadius: "12px",
-            border: "none",
-            background: complete
-              ? "rgba(255, 255, 255, 0.95)"
-              : "rgba(255, 255, 255, 0.3)",
-            color: complete ? "#764ba2" : "rgba(255,255,255,0.5)",
-            cursor: complete ? "pointer" : "not-allowed",
-            fontSize: "14px",
-            fontWeight: 600,
-            fontFamily: "system-ui, -apple-system, sans-serif",
-            transition: "all 0.2s ease",
-            boxShadow: complete ? "0 4px 20px rgba(0,0,0,0.15)" : "none",
-          }}
-        >
-          Verify Code
-        </button>
-      </div>
-
-      {complete && (
-        <div
-          style={{
-            color: "white",
-            fontSize: "14px",
-            fontFamily: "ui-monospace, monospace",
-            background: "rgba(255,255,255,0.2)",
-            padding: "8px 16px",
-            borderRadius: "8px",
-            zIndex: 1,
-          }}
-        >
-          ✨ Code: {value}
-        </div>
-      )}
-    </div>
-  );
-};
-
-/**
- * Design 2: Neon Cyberpunk
+ * Neon Cyberpunk
  * Dark background with neon glow effects, vibrant accent colors
  */
 export const NeonCyberpunkDemo = () => {
@@ -475,7 +263,7 @@ export const NeonCyberpunkDemo = () => {
         </p>
       </div>
 
-      <AuthCode.Group
+      <AuthCodeGroup
         ref={groupRef}
         value={value}
         onValueChange={handleValueChange}
@@ -539,7 +327,7 @@ export const NeonCyberpunkDemo = () => {
 
         {Array.from({ length: 6 }).map((_, index) => (
           <React.Fragment key={index}>
-            <AuthCode.Input
+            <AuthCodeInput
               index={index}
               onFocus={() => setFocusedIndex(index)}
               onBlur={() => setFocusedIndex(null)}
@@ -588,7 +376,7 @@ export const NeonCyberpunkDemo = () => {
             )}
           </React.Fragment>
         ))}
-      </AuthCode.Group>
+      </AuthCodeGroup>
 
       <div style={{ display: "flex", gap: "16px", zIndex: 1 }}>
         <button
@@ -648,214 +436,6 @@ export const NeonCyberpunkDemo = () => {
           }}
         >
           {">"} SEQUENCE VALIDATED: {value}
-        </div>
-      )}
-    </div>
-  );
-};
-
-/**
- * Design 3: Minimal Brutalist
- * Bold, chunky borders, high contrast, underline-only inputs with large typography
- */
-export const BrutalistDemo = () => {
-  const [value, setValue] = useState("");
-  const [complete, setComplete] = useState(false);
-  const [focusedIndex, setFocusedIndex] = useState(null);
-  const groupRef = useRef(null);
-
-  const handleValueChange = (newValue) => {
-    setValue(newValue);
-    setComplete(newValue.length === 4);
-  };
-
-  const handleClear = () => {
-    setValue("");
-    setComplete(false);
-    const firstInput = groupRef.current?.querySelector(
-      "input:not([type=hidden])"
-    );
-    firstInput?.focus();
-  };
-
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: "40px",
-        padding: "64px 48px",
-        background: "#FFFEF0",
-        border: "4px solid #000",
-        boxShadow: "8px 8px 0 #000",
-        position: "relative",
-      }}
-    >
-      <div style={{ textAlign: "center" }}>
-        <h3
-          style={{
-            margin: "0 0 12px 0",
-            color: "#000",
-            fontSize: "32px",
-            fontWeight: 900,
-            fontFamily: "'Arial Black', 'Helvetica Bold', sans-serif",
-            textTransform: "uppercase",
-            letterSpacing: "-1px",
-          }}
-        >
-          PIN Code
-        </h3>
-        <p
-          style={{
-            margin: 0,
-            color: "#666",
-            fontSize: "14px",
-            fontFamily: "'Courier New', monospace",
-            textTransform: "uppercase",
-            letterSpacing: "2px",
-          }}
-        >
-          4 digits required
-        </p>
-      </div>
-
-      <AuthCode.Group
-        ref={groupRef}
-        value={value}
-        onValueChange={handleValueChange}
-        autoSubmit={false}
-        style={{ display: "flex", gap: "24px" }}
-      >
-        {Array.from({ length: 4 }).map((_, index) => (
-          <div
-            key={index}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
-            <AuthCode.Input
-              index={index}
-              onFocus={() => setFocusedIndex(index)}
-              onBlur={() => setFocusedIndex(null)}
-              style={{
-                width: "80px",
-                height: "100px",
-                textAlign: "center",
-                fontSize: "64px",
-                fontWeight: 900,
-                fontFamily: "'Arial Black', 'Helvetica Bold', sans-serif",
-                border: "none",
-                borderBottom:
-                  focusedIndex === index ? "8px solid #000" : "4px solid #000",
-                background: "transparent",
-                color: "#000",
-                outline: "none",
-                transition: "border-width 0.1s ease",
-                caretColor: "#000",
-              }}
-            />
-            <span
-              style={{
-                marginTop: "8px",
-                fontSize: "12px",
-                fontFamily: "'Courier New', monospace",
-                color: value[index] ? "#000" : "#ccc",
-                fontWeight: 700,
-              }}
-            >
-              {index + 1}
-            </span>
-          </div>
-        ))}
-      </AuthCode.Group>
-
-      <div style={{ display: "flex", gap: "16px" }}>
-        <button
-          onClick={handleClear}
-          style={{
-            padding: "16px 32px",
-            border: "3px solid #000",
-            background: "#fff",
-            color: "#000",
-            cursor: "pointer",
-            fontSize: "14px",
-            fontWeight: 900,
-            fontFamily: "'Arial Black', 'Helvetica Bold', sans-serif",
-            textTransform: "uppercase",
-            letterSpacing: "1px",
-            transition: "transform 0.1s ease, box-shadow 0.1s ease",
-            boxShadow: "4px 4px 0 #000",
-          }}
-          onMouseDown={(e) => {
-            e.currentTarget.style.transform = "translate(2px, 2px)";
-            e.currentTarget.style.boxShadow = "2px 2px 0 #000";
-          }}
-          onMouseUp={(e) => {
-            e.currentTarget.style.transform = "translate(0, 0)";
-            e.currentTarget.style.boxShadow = "4px 4px 0 #000";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "translate(0, 0)";
-            e.currentTarget.style.boxShadow = "4px 4px 0 #000";
-          }}
-        >
-          Clear
-        </button>
-        <button
-          disabled={!complete}
-          style={{
-            padding: "16px 32px",
-            border: "3px solid #000",
-            background: complete ? "#000" : "#ccc",
-            color: complete ? "#FFFEF0" : "#888",
-            cursor: complete ? "pointer" : "not-allowed",
-            fontSize: "14px",
-            fontWeight: 900,
-            fontFamily: "'Arial Black', 'Helvetica Bold', sans-serif",
-            textTransform: "uppercase",
-            letterSpacing: "1px",
-            transition: "transform 0.1s ease, box-shadow 0.1s ease",
-            boxShadow: complete ? "4px 4px 0 #666" : "none",
-          }}
-          onMouseDown={(e) => {
-            if (complete) {
-              e.currentTarget.style.transform = "translate(2px, 2px)";
-              e.currentTarget.style.boxShadow = "2px 2px 0 #666";
-            }
-          }}
-          onMouseUp={(e) => {
-            if (complete) {
-              e.currentTarget.style.transform = "translate(0, 0)";
-              e.currentTarget.style.boxShadow = "4px 4px 0 #666";
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (complete) {
-              e.currentTarget.style.transform = "translate(0, 0)";
-              e.currentTarget.style.boxShadow = "4px 4px 0 #666";
-            }
-          }}
-        >
-          Submit →
-        </button>
-      </div>
-
-      {complete && (
-        <div
-          style={{
-            padding: "12px 24px",
-            background: "#000",
-            color: "#FFFEF0",
-            fontSize: "18px",
-            fontWeight: 900,
-            fontFamily: "'Courier New', monospace",
-            letterSpacing: "4px",
-          }}
-        >
-          CODE: {value}
         </div>
       )}
     </div>

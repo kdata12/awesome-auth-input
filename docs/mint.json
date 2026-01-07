@@ -25,6 +25,10 @@
       "name": "GitHub",
       "icon": "github",
       "url": "https://github.com/kdata12/awesome-auth-input"
+    },
+    {
+      "name": "Storybook",
+      "url": "https://awesome-auth-input.vercel.app/?path=/story/authcode-designs--neon-cyberpunk"
     }
   ],
   "navigation": [
@@ -36,10 +40,9 @@
       ]
     },
     {
-      "group": "Components",
+      "group": "Showcase",
       "pages": [
-        "components/group",
-        "components/input"
+        "demos"
       ]
     },
     {

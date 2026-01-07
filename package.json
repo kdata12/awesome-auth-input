@@ -31,6 +31,7 @@
     "preview": "vite preview",
     "prepublishOnly": "npm run build",
     "storybook": "storybook dev -p 6006",
+    "storybook:deploy": "npx storybook build && npx vercel storybook-static --prod",
     "build-storybook": "storybook build",
     "docs": "cd docs && npx mintlify dev",
     "docs:build": "cd docs && npx mintlify build"

@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { AuthCode } from "../src";
 import "./AuthCode.css";
 
 const meta: Meta<typeof AuthCode.Group> = {
-  title: "Components/AuthCode",
+  title: "AuthCode/Component",
   component: AuthCode.Group,
   parameters: {
     layout: "centered",

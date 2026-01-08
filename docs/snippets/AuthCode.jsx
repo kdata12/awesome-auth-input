@@ -1,3 +1,6 @@
+// This module is not a real implementation of AuthCode but it is written
+// for the purpose of rendering demos in the mintlify docs
+
 import React, {
   createContext,
   useCallback,
